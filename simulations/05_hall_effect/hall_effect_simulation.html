@@ -1,0 +1,1184 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ホール効果シミュレーション</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172126;
+      --muted: #5d6a70;
+      --line: #d5dedc;
+      --plate: #ccd7d6;
+      --plate-dark: #9aa9aa;
+      --blue: #2266c2;
+      --red: #c83d42;
+      --green: #23745a;
+      --amber: #b36a00;
+      --purple: #6d4ab2;
+      --bfield: #3f3a35;
+      --shadow: 0 12px 30px rgba(27, 42, 45, 0.11);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.9), rgba(246,247,242,0.96)),
+        repeating-linear-gradient(90deg, rgba(35,116,90,0.06) 0 1px, transparent 1px 72px);
+      color: var(--ink);
+      font-family: "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 14px;
+      max-width: 1360px;
+      width: 100%;
+      margin: 0 auto;
+      min-height: 64px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.22rem, 2vw, 1.85rem);
+      letter-spacing: 0;
+      line-height: 1.16;
+    }
+
+    .subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .status-pill {
+      min-width: 210px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.88);
+      border-radius: var(--radius);
+      padding: 9px 12px;
+      box-shadow: 0 7px 20px rgba(27, 42, 45, 0.08);
+    }
+
+    .status-pill strong {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .status-pill span {
+      display: block;
+      margin-top: 3px;
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    main {
+      width: 100%;
+      max-width: 1360px;
+      min-height: 0;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(640px, 1fr) 330px;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .stage-wrap {
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, #ffffff 0%, #eef4f1 100%);
+      box-shadow: var(--shadow);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .view-tabs {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: inline-grid;
+      grid-auto-flow: column;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid rgba(23,33,38,0.13);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(6px);
+      z-index: 2;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-weight: 800;
+      line-height: 1;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #aebcba;
+    }
+
+    button.active {
+      background: #172126;
+      color: #fff;
+      border-color: #172126;
+    }
+
+    .view-tabs button {
+      min-width: 84px;
+      padding: 8px 10px;
+      font-size: 0.9rem;
+    }
+
+    aside {
+      min-width: 0;
+      min-height: 0;
+      align-self: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.92);
+      box-shadow: var(--shadow);
+      padding: 12px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .control-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .control {
+      display: grid;
+      gap: 7px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid #edf1f0;
+    }
+
+    .control:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: #263439;
+      font-size: 0.88rem;
+      font-weight: 900;
+    }
+
+    .value {
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .segmented {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      gap: 5px;
+    }
+
+    .segmented button {
+      min-width: 0;
+      padding: 9px 6px;
+      font-size: 0.88rem;
+    }
+
+    .switch-pair {
+      display: grid;
+      gap: 9px;
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .switch-row span {
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+
+    .switch {
+      position: relative;
+      width: 52px;
+      height: 29px;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #cad4d2;
+      transition: background 140ms ease;
+      border: 1px solid #b9c4c2;
+    }
+
+    .track::after {
+      content: "";
+      position: absolute;
+      width: 23px;
+      height: 23px;
+      left: 2px;
+      top: 2px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 7px rgba(0,0,0,0.22);
+      transition: transform 140ms ease;
+    }
+
+    .switch input:checked + .track {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .switch input:checked + .track::after {
+      transform: translateX(23px);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--green);
+    }
+
+    .range-words {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      color: #263439;
+      font-size: 0.88rem;
+    }
+
+    .check-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+    }
+
+    .reset {
+      width: 100%;
+      padding: 11px 12px;
+      background: #f8faf9;
+    }
+
+    @media (max-width: 980px) {
+      html,
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      header,
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-wrap {
+        height: 540px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>ホール効果の発生を見せるシミュレーション</h1>
+        <p class="subtitle">電流・磁場・キャリアの条件を変えて、導体内で何が起こるか観察しよう</p>
+      </div>
+      <div class="status-pill">
+        <strong>ホール電圧の向き</strong>
+        <span id="heroVoltage">ホール電圧：なし</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="stage-wrap" aria-label="シミュレーション表示">
+        <div class="view-tabs" role="group" aria-label="視点切替">
+          <button data-view="oblique" class="active" type="button">斜め視点</button>
+          <button data-view="top" type="button">上面図</button>
+        </div>
+        <canvas id="simCanvas"></canvas>
+      </section>
+
+      <aside>
+        <section class="panel">
+          <h2>操作</h2>
+          <div class="control-stack">
+            <div class="control">
+              <div class="switch-pair">
+                <div class="switch-row">
+                  <span>電流</span>
+                  <label class="switch" title="電流ON/OFF">
+                    <input id="currentOn" type="checkbox">
+                    <span class="track"></span>
+                  </label>
+                </div>
+                <div class="switch-row">
+                  <span>磁場</span>
+                  <label class="switch" title="磁場ON/OFF">
+                    <input id="fieldOn" type="checkbox">
+                    <span class="track"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="control">
+              <div class="label-row">
+                <label>磁場の向き</label>
+                <span class="value" id="fieldDirText">奥向き</span>
+              </div>
+              <div class="segmented">
+                <button data-field-dir="1" type="button">手前 ⊙</button>
+                <button data-field-dir="-1" class="active" type="button">奥 ⊗</button>
+              </div>
+            </div>
+
+            <div class="control">
+              <div class="label-row">
+                <label for="fieldStrength">磁場の強さ</label>
+                <span class="value" id="fieldStrengthText">中</span>
+              </div>
+              <input id="fieldStrength" type="range" min="0" max="1" step="0.01" value="0.5">
+              <div class="range-words" aria-hidden="true"><span>弱い</span><span>中</span><span>強い</span></div>
+            </div>
+
+            <div class="control">
+              <div class="label-row">
+                <label>キャリア</label>
+                <span class="value" id="carrierText">電子</span>
+              </div>
+              <div class="segmented">
+                <button data-carrier="positive" type="button">正電荷</button>
+                <button data-carrier="electron" class="active" type="button">電子</button>
+              </div>
+            </div>
+
+            <div class="control">
+              <div class="label-row">
+                <label>電流の向き</label>
+                <span class="value" id="currentText">+x方向</span>
+              </div>
+              <div class="segmented">
+                <button data-current="1" class="active" type="button">+x</button>
+                <button data-current="-1" type="button">−x</button>
+              </div>
+            </div>
+
+            <div class="control">
+              <div class="label-row"><span>表示切替</span></div>
+              <div class="check-list">
+                <label class="check-row"><input id="showField" type="checkbox" checked>電場表示</label>
+                <label class="check-row"><input id="showForces" type="checkbox" checked>力ベクトル表示</label>
+                <label class="check-row"><input id="showRepresentative" type="checkbox">代表粒子表示</label>
+              </div>
+            </div>
+
+            <button id="resetBtn" class="reset" type="button">リセット</button>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("simCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const defaults = {
+      view: "oblique",
+      currentOn: false,
+      fieldOn: false,
+      fieldDir: -1,
+      fieldStrength: 0.5,
+      carrier: "electron",
+      currentDir: 1,
+      showForces: true,
+      showField: true,
+      showRepresentative: false
+    };
+
+    const state = { ...defaults };
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let lastTime = performance.now();
+    let simTime = 0;
+    let hallBuild = 0;
+
+    const particles = Array.from({ length: 54 }, (_, i) => {
+      const row = i % 6;
+      const col = Math.floor(i / 6);
+      return {
+        x: (col / 9 + (row % 2) * 0.045 + 0.08) % 1,
+        y: 0.16 + row * 0.135 + ((col * 37) % 11) * 0.004,
+        r: 5.3 + (i % 4) * 0.45,
+        phase: ((i * 29) % 100) / 100,
+        bias: 0,
+        biasLag: 0.08 + (i % 7) * 0.035
+      };
+    });
+
+    const els = {
+      heroVoltage: document.getElementById("heroVoltage"),
+      currentOn: document.getElementById("currentOn"),
+      fieldOn: document.getElementById("fieldOn"),
+      fieldStrength: document.getElementById("fieldStrength"),
+      fieldStrengthText: document.getElementById("fieldStrengthText"),
+      fieldDirText: document.getElementById("fieldDirText"),
+      carrierText: document.getElementById("carrierText"),
+      currentText: document.getElementById("currentText"),
+      showForces: document.getElementById("showForces"),
+      showField: document.getElementById("showField"),
+      showRepresentative: document.getElementById("showRepresentative"),
+      resetBtn: document.getElementById("resetBtn")
+    };
+
+    function chargeSign() {
+      return state.carrier === "positive" ? 1 : -1;
+    }
+
+    function velocitySign() {
+      if (!state.currentOn) return 0;
+      return state.currentDir * chargeSign();
+    }
+
+    function hallActive() {
+      return state.currentOn && state.fieldOn && state.fieldStrength > 0;
+    }
+
+    function magneticForceSign() {
+      if (!hallActive()) return 0;
+      return -state.currentDir * state.fieldDir;
+    }
+
+    function electricFieldSign() {
+      const fb = magneticForceSign();
+      if (fb === 0) return 0;
+      return -fb / chargeSign();
+    }
+
+    function finalHallVoltage() {
+      if (!hallActive()) return 0;
+      return -electricFieldSign() * state.fieldStrength;
+    }
+
+    function hallVoltage() {
+      return finalHallVoltage() * hallBuild;
+    }
+
+    function hallVoltageLabel() {
+      if (!hallActive() || hallBuild < 0.08 || Math.abs(hallVoltage()) < 0.01) return "ホール電圧：なし";
+      return hallVoltage() > 0 ? "ホール電圧：上が＋" : "ホール電圧：下が＋";
+    }
+
+    function fieldStrengthLabel() {
+      const v = state.fieldStrength;
+      if (v <= 0) return "なし";
+      if (v < 0.33) return "弱い";
+      if (v < 0.67) return "中";
+      return "強い";
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      width = Math.max(320, Math.floor(rect.width));
+      height = Math.max(320, Math.floor(rect.height));
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function bindControls() {
+      document.querySelectorAll("[data-view]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.view = button.dataset.view;
+          updateUI();
+        });
+      });
+
+      document.querySelectorAll("[data-field-dir]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.fieldDir = Number(button.dataset.fieldDir);
+          updateUI();
+        });
+      });
+
+      document.querySelectorAll("[data-carrier]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.carrier = button.dataset.carrier;
+          updateUI();
+        });
+      });
+
+      document.querySelectorAll("[data-current]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.currentDir = Number(button.dataset.current);
+          updateUI();
+        });
+      });
+
+      els.currentOn.addEventListener("change", () => {
+        state.currentOn = els.currentOn.checked;
+        updateUI();
+      });
+
+      els.fieldOn.addEventListener("change", () => {
+        state.fieldOn = els.fieldOn.checked;
+        updateUI();
+      });
+
+      els.fieldStrength.addEventListener("input", () => {
+        state.fieldStrength = Number(els.fieldStrength.value);
+        updateUI();
+      });
+
+      els.showField.addEventListener("change", () => {
+        state.showField = els.showField.checked;
+        updateUI();
+      });
+
+      els.showForces.addEventListener("change", () => {
+        state.showForces = els.showForces.checked;
+        updateUI();
+      });
+
+      els.showRepresentative.addEventListener("change", () => {
+        state.showRepresentative = els.showRepresentative.checked;
+        updateUI();
+      });
+
+      els.resetBtn.addEventListener("click", () => {
+        Object.assign(state, defaults);
+        hallBuild = 0;
+        simTime = 0;
+        particles.forEach(p => {
+          p.bias = 0;
+        });
+        updateUI();
+      });
+    }
+
+    function updateUI() {
+      els.currentOn.checked = state.currentOn;
+      els.fieldOn.checked = state.fieldOn;
+      els.fieldStrength.value = state.fieldStrength;
+      els.showField.checked = state.showField;
+      els.showForces.checked = state.showForces;
+      els.showRepresentative.checked = state.showRepresentative;
+
+      document.querySelectorAll("[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
+      document.querySelectorAll("[data-field-dir]").forEach(b => b.classList.toggle("active", Number(b.dataset.fieldDir) === state.fieldDir));
+      document.querySelectorAll("[data-carrier]").forEach(b => b.classList.toggle("active", b.dataset.carrier === state.carrier));
+      document.querySelectorAll("[data-current]").forEach(b => b.classList.toggle("active", Number(b.dataset.current) === state.currentDir));
+
+      els.heroVoltage.textContent = hallVoltageLabel();
+      els.fieldStrengthText.textContent = fieldStrengthLabel();
+      els.fieldDirText.textContent = state.fieldDir === 1 ? "手前向き" : "奥向き";
+      els.carrierText.textContent = state.carrier === "positive" ? "正電荷" : "電子";
+      els.currentText.textContent = state.currentDir === 1 ? "+x方向" : "−x方向";
+    }
+
+    function clear() {
+      const g = ctx.createLinearGradient(0, 0, 0, height);
+      g.addColorStop(0, "#ffffff");
+      g.addColorStop(1, "#eaf1ee");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(35,116,90,0.09)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < width; x += 48) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += 48) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function roundRect(x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr);
+      ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
+    }
+
+    function drawArrow(x1, y1, x2, y2, color, label, options = {}) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      if (len < 1) return;
+      const head = Math.min(16, Math.max(9, len * 0.22));
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = options.width || 4;
+      ctx.lineCap = "round";
+      ctx.globalAlpha = options.alpha ?? 1;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      if (label) {
+        const lx = (x1 + x2) / 2 + (options.labelX || 0);
+        const ly = (y1 + y2) / 2 + (options.labelY || -10);
+        ctx.font = `800 ${options.labelSize || 15}px 'Yu Gothic UI', sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "rgba(255,255,255,0.88)";
+        ctx.strokeText(label, lx, ly);
+        ctx.fillText(label, lx, ly);
+      }
+      ctx.restore();
+    }
+
+    function drawLabel(text, x, y, color = "#172126", align = "center", size = 15, alpha = 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = `800 ${size}px 'Yu Gothic UI', sans-serif`;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
+    function drawFieldMark(x, y, size = 22, alpha = 1) {
+      if (!state.fieldOn) return;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = "#3f3a35";
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.lineWidth = 2.3;
+      ctx.beginPath();
+      ctx.arc(x, y, size * 0.43, 0, Math.PI * 2);
+      ctx.stroke();
+      if (state.fieldDir === 1) {
+        ctx.beginPath();
+        ctx.arc(x, y, size * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x - size * 0.25, y - size * 0.25);
+        ctx.lineTo(x + size * 0.25, y + size * 0.25);
+        ctx.moveTo(x + size * 0.25, y - size * 0.25);
+        ctx.lineTo(x - size * 0.25, y + size * 0.25);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawFieldVectorOblique(x, y, size = 34, alpha = 1) {
+      if (!state.fieldOn) return;
+      const z = { x: 0, y: -1.22 * size };
+      const tail = state.fieldDir === 1 ? { x, y } : { x: x + z.x, y: y + z.y };
+      const head = state.fieldDir === 1 ? { x: x + z.x, y: y + z.y } : { x, y };
+
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.22;
+      ctx.strokeStyle = "#3f3a35";
+      ctx.lineWidth = 7;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(tail.x + 3, tail.y + 5);
+      ctx.lineTo(head.x + 3, head.y + 5);
+      ctx.stroke();
+      ctx.restore();
+
+      drawArrow(tail.x, tail.y, head.x, head.y, "#3f3a35", "", { width: 4.2, alpha });
+
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.58;
+      ctx.fillStyle = "#3f3a35";
+      ctx.beginPath();
+      ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawParticle(x, y, r, alpha = 1) {
+      const isPositive = state.carrier === "positive";
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = "rgba(0,0,0,0.14)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = isPositive ? "#c83d42" : "#2266c2";
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.fillStyle = "#fff";
+      ctx.font = `900 ${Math.max(10, r * 1.55)}px system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(isPositive ? "+" : "−", x, y - 0.5);
+      ctx.restore();
+    }
+
+    function drawChargeStrip(rect, oblique = false) {
+      if (!hallActive() && hallBuild < 0.01) return;
+      const vh = finalHallVoltage();
+      if (Math.abs(vh) < 0.001) return;
+      const alpha = clamp(hallBuild, 0, 1) * (0.2 + state.fieldStrength * 0.75);
+      const topPositive = vh > 0;
+      const topText = topPositive ? "+" : "−";
+      const bottomText = topPositive ? "−" : "+";
+      const topColor = topPositive ? "#c83d42" : "#2266c2";
+      const bottomColor = topPositive ? "#2266c2" : "#c83d42";
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = "900 22px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const count = 9;
+      for (let i = 0; i < count; i++) {
+        const u = (i + 0.5) / count;
+        let topX = rect.x + u * rect.w;
+        let botX = rect.x + u * rect.w;
+        let topY = rect.y - 12;
+        let botY = rect.y + rect.h + 14;
+        if (oblique) {
+          const top = obliquePoint(rect, u, 0);
+          const bottom = obliquePoint(rect, u, 1);
+          topX = top.x;
+          botX = bottom.x;
+          topY = top.y - 12;
+          botY = bottom.y + 14;
+        }
+        ctx.fillStyle = topColor;
+        ctx.strokeStyle = "rgba(255,255,255,0.92)";
+        ctx.lineWidth = 5;
+        ctx.strokeText(topText, topX, topY);
+        ctx.fillText(topText, topX, topY);
+        ctx.fillStyle = bottomColor;
+        ctx.strokeText(bottomText, botX, botY);
+        ctx.fillText(bottomText, botX, botY);
+      }
+      ctx.restore();
+    }
+
+    function obliquePoint(rect, nx, ny) {
+      return {
+        x: rect.x + nx * rect.w + (0.5 - ny) * rect.skew,
+        y: rect.y + ny * rect.h
+      };
+    }
+
+    function drawFieldGrid(rect, mode) {
+      if (!state.fieldOn) return;
+      const alpha = 0.26 + state.fieldStrength * 0.48;
+      const cols = 5;
+      const rows = 2;
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          const nx = (i + 0.5) / cols;
+          const ny = (j + 0.5) / rows;
+          let x;
+          let y;
+          if (mode === "oblique") {
+            const p = obliquePoint(rect, nx, ny);
+            x = p.x;
+            y = p.y;
+            drawFieldVectorOblique(x, y, 28 + state.fieldStrength * 10, alpha);
+          } else {
+            x = rect.x + nx * rect.w;
+            y = rect.y + ny * rect.h;
+            drawFieldMark(x, y, 18 + state.fieldStrength * 6, alpha);
+          }
+        }
+      }
+      drawLabel(`磁場 B（${state.fieldDir === 1 ? "手前" : "奥"}）`, rect.x + rect.w - 80, rect.y - 28, "#3f3a35", "center", 14);
+    }
+
+    function drawCurrentArrow(rect, oblique) {
+      if (!state.currentOn) return;
+      const y = rect.y + rect.h + (oblique ? 58 : 44);
+      const x1 = rect.x + 34;
+      const x2 = rect.x + rect.w - 34;
+      if (state.currentDir === 1) {
+        drawArrow(x1, y, x2, y, "#172126", "電流 I +x", { width: 4, labelY: -15 });
+      } else {
+        drawArrow(x2, y, x1, y, "#172126", "電流 I −x", { width: 4, labelY: -15 });
+      }
+    }
+
+    function drawVelocityGuide(rect, oblique) {
+      if (!state.currentOn) return;
+      const vy = rect.y - 34;
+      const left = rect.x + (oblique ? 86 : 66);
+      const right = rect.x + (oblique ? 250 : 230);
+      if (velocitySign() === 1) {
+        drawArrow(left, vy, right, vy, "#6d4ab2", "キャリア速度 v", { width: 3.4, labelY: -13 });
+      } else {
+        drawArrow(right, vy, left, vy, "#6d4ab2", "キャリア速度 v", { width: 3.4, labelY: -13 });
+      }
+    }
+
+    function drawHallField(rect, mode) {
+      if (!state.showField || hallBuild < 0.01 || !hallActive()) return;
+      const eSign = electricFieldSign();
+      const color = "#23745a";
+      const len = rect.h * 0.44 * (0.38 + state.fieldStrength * 0.62) * hallBuild;
+      if (mode === "oblique") {
+        const p1 = obliquePoint(rect, 0.28, 0.5 + eSign * (len / rect.h) / 2);
+        const p2 = obliquePoint(rect, 0.28, 0.5 - eSign * (len / rect.h) / 2);
+        drawArrow(p1.x, p1.y, p2.x, p2.y, color, "電場ベクトル", { width: 4.5, labelX: 42, labelY: 0, labelSize: 13 });
+      } else {
+        const x = rect.x + rect.w * 0.28;
+        const y = rect.y + rect.h * 0.5;
+        const dy = -eSign * len / 2;
+        drawArrow(x, y - dy, x, y + dy, color, "電場ベクトル", { width: 4.5, labelX: 42, labelY: 0, labelSize: 13 });
+      }
+    }
+
+    function drawParticles(rect, mode) {
+      const activeSpeed = state.currentOn ? 1 : 0;
+      const speed = (0.11 + state.fieldStrength * 0.04) * activeSpeed;
+      particles.forEach((p, i) => {
+        const nx = fract(p.x + simTime * speed * velocitySign() + p.phase * 0.04);
+        const wave = state.currentOn ? Math.sin(simTime * 2.1 + i) * 0.012 : 0;
+        const ny = clamp(p.y - p.bias + wave, 0.11, 0.89);
+        if (mode === "oblique") {
+          const pos = obliquePoint(rect, nx, ny);
+          drawParticle(pos.x, pos.y, p.r, 0.94);
+        } else {
+          drawParticle(rect.x + nx * rect.w, rect.y + ny * rect.h, p.r, 0.94);
+        }
+      });
+    }
+
+    function drawOblique() {
+      const hasPanel = state.showRepresentative;
+      const rect = {
+        x: width * 0.09,
+        y: height * 0.29,
+        w: Math.min(width * (hasPanel ? 0.58 : 0.72), hasPanel ? 630 : 760),
+        h: height * 0.32,
+        skew: Math.min(70, width * 0.075),
+        thick: 32
+      };
+      rect.x = Math.max(50, (width - rect.w) * (hasPanel ? 0.27 : 0.44));
+
+      const topLeft = obliquePoint(rect, 0, 0);
+      const topRight = obliquePoint(rect, 1, 0);
+      const botRight = obliquePoint(rect, 1, 1);
+      const botLeft = obliquePoint(rect, 0, 1);
+
+      ctx.save();
+      ctx.fillStyle = "#9aa9aa";
+      ctx.beginPath();
+      ctx.moveTo(botLeft.x, botLeft.y);
+      ctx.lineTo(botRight.x, botRight.y);
+      ctx.lineTo(botRight.x, botRight.y + rect.thick);
+      ctx.lineTo(botLeft.x, botLeft.y + rect.thick);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#b9c6c4";
+      ctx.beginPath();
+      ctx.moveTo(topRight.x, topRight.y);
+      ctx.lineTo(botRight.x, botRight.y);
+      ctx.lineTo(botRight.x, botRight.y + rect.thick);
+      ctx.lineTo(topRight.x, topRight.y + rect.thick);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#ccd7d6";
+      ctx.strokeStyle = "#7f9292";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(topLeft.x, topLeft.y);
+      ctx.lineTo(topRight.x, topRight.y);
+      ctx.lineTo(botRight.x, botRight.y);
+      ctx.lineTo(botLeft.x, botLeft.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      drawFieldGrid(rect, "oblique");
+      drawChargeStrip(rect, true);
+      drawParticles(rect, "oblique");
+      drawHallField(rect, "oblique");
+      drawVelocityGuide(rect, true);
+      drawCurrentArrow(rect, true);
+      drawStateNote(rect.x + rect.w * 0.52, rect.y - 62);
+      drawAxes(width - 96, height - 70);
+      drawRepresentativePanel();
+      drawLabel("斜め視点", width - 92, 32, "#5d6a70", "center", 14);
+    }
+
+    function drawTop() {
+      const hasPanel = state.showRepresentative;
+      const rect = {
+        x: width * 0.08,
+        y: height * 0.24,
+        w: Math.min(width * (hasPanel ? 0.58 : 0.72), hasPanel ? 650 : 780),
+        h: height * 0.42
+      };
+      rect.x = Math.max(50, (width - rect.w) * (hasPanel ? 0.27 : 0.5));
+
+      ctx.save();
+      ctx.fillStyle = "#ccd7d6";
+      ctx.strokeStyle = "#7f9292";
+      ctx.lineWidth = 2;
+      roundRect(rect.x, rect.y, rect.w, rect.h, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      drawFieldGrid(rect, "top");
+      drawChargeStrip(rect, false);
+      drawParticles(rect, "top");
+      drawHallField(rect, "top");
+      drawVelocityGuide(rect, false);
+      drawCurrentArrow(rect, false);
+      drawStateNote(rect.x + rect.w * 0.5, rect.y - 64);
+      drawAxis2D(width - 104, height - 70);
+      drawRepresentativePanel();
+      drawLabel("上面図", width - 82, 32, "#5d6a70", "center", 14);
+    }
+
+    function drawStateNote(x, y) {
+      let text = "";
+      if (!state.currentOn && !state.fieldOn) text = "電流なし・磁場なし";
+      else if (state.currentOn && !state.fieldOn) text = "磁場なし";
+      else if (!state.currentOn && state.fieldOn) text = "電流なし";
+      else if (state.fieldStrength === 0) text = "磁場の強さ：なし";
+      else text = "変化を観察中";
+      drawLabel(text, x, y, "#5d6a70", "center", 14);
+    }
+
+    function drawRepresentativePanel() {
+      if (!state.showRepresentative) return;
+      const w = Math.min(300, Math.max(250, width * 0.28));
+      const h = 214;
+      const x = width - w - 18;
+      const y = height - h - 18;
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      ctx.strokeStyle = "#d5dedc";
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = "rgba(27,42,45,0.12)";
+      ctx.shadowBlur = 22;
+      ctx.shadowOffsetY = 8;
+      roundRect(x, y, w, h, 8);
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.stroke();
+      ctx.restore();
+
+      drawLabel("代表粒子：運動中の1個を拡大", x + 14, y + 20, "#263439", "left", 13);
+      const cx = x + w * 0.48;
+      const cy = y + h * 0.54;
+      drawParticle(cx, cy, 16, 1);
+
+      if (state.currentOn) {
+        const vLen = 72;
+        if (velocitySign() === 1) {
+          drawArrow(cx - 8, cy - 42, cx - 8 + vLen, cy - 42, "#6d4ab2", "v", { width: 3, labelY: -12 });
+        } else {
+          drawArrow(cx + 8, cy - 42, cx + 8 - vLen, cy - 42, "#6d4ab2", "v", { width: 3, labelY: -12 });
+        }
+      }
+
+      if (state.showField && hallActive() && hallBuild > 0.02) {
+        const eLen = 42 * hallBuild;
+        const eSign = electricFieldSign();
+        drawArrow(x + 38, cy + eSign * eLen / 2, x + 38, cy - eSign * eLen / 2, "#23745a", "E_H", { width: 2.8, labelX: -20, labelY: 0, labelSize: 12 });
+      }
+
+      if (state.showForces && hallActive()) {
+        const fSign = magneticForceSign();
+        const forceBase = 54 * (0.55 + state.fieldStrength * 0.55);
+        drawArrow(cx, cy, cx, cy - fSign * forceBase, "#b36a00", "磁気力", { width: 3.4, labelX: 34, labelY: 0, labelSize: 12 });
+        if (hallBuild > 0.02) {
+          const eForceLen = forceBase * hallBuild;
+          drawArrow(cx, cy, cx, cy + fSign * eForceLen, "#c83d42", "電気力", { width: 3.4, labelX: 34, labelY: 0, labelSize: 12 });
+        }
+      }
+
+      let message = "";
+      if (!state.currentOn && !state.fieldOn) message = "電流なし：キャリアは移動していない";
+      else if (state.currentOn && !state.fieldOn) message = "磁場なし：磁気力なし";
+      else if (!state.currentOn && state.fieldOn) message = "動いていないため磁気力なし";
+      else if (state.fieldStrength === 0) message = "磁場の強さなし：磁気力なし";
+      else message = hallBuild < 0.95 ? "電気力が大きくなる" : "反対向きにつり合う";
+      drawLabel(message, x + w * 0.5, y + h - 24, "#5d6a70", "center", 13);
+    }
+
+    function drawAxes(x, y) {
+      drawArrow(x, y, x + 44, y, "#172126", "x", { width: 2.5, labelY: -11 });
+      drawArrow(x, y, x + 26, y - 30, "#172126", "y", { width: 2.5, labelY: -10 });
+      drawArrow(x, y, x, y - 48, "#172126", "z", { width: 2.5, labelX: 14, labelY: -8 });
+    }
+
+    function drawAxis2D(x, y) {
+      drawArrow(x, y, x + 48, y, "#172126", "x", { width: 2.5, labelY: -11 });
+      drawArrow(x, y, x, y - 42, "#172126", "y", { width: 2.5, labelX: 14, labelY: -8 });
+      if (state.fieldOn) {
+        drawFieldMark(x + 8, y + 34, 18, 0.95);
+        drawLabel(state.fieldDir === 1 ? "z" : "−z", x + 30, y + 34, "#172126", "left", 13);
+      }
+    }
+
+    function drawScene() {
+      clear();
+      if (state.view === "oblique") drawOblique();
+      if (state.view === "top") drawTop();
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function smoothstep(value) {
+      const t = clamp(value, 0, 1);
+      return t * t * (3 - 2 * t);
+    }
+
+    function fract(value) {
+      return value - Math.floor(value);
+    }
+
+    function animate(now) {
+      const dt = Math.min(0.04, (now - lastTime) / 1000);
+      lastTime = now;
+      const target = hallActive() ? 1 : 0;
+      const rate = target > hallBuild ? 0.6 : 0.9;
+      hallBuild += (target - hallBuild) * Math.min(1, dt * rate);
+      if (Math.abs(target - hallBuild) < 0.002) hallBuild = target;
+      const forceSign = magneticForceSign();
+      particles.forEach((p, i) => {
+        const delayedBuild = hallActive() ? smoothstep((hallBuild - p.biasLag) / (1 - p.biasLag)) : 0;
+        const targetBias = forceSign * state.fieldStrength * delayedBuild * 0.28;
+        const followRate = 1.25 + (i % 6) * 0.13;
+        p.bias += (targetBias - p.bias) * Math.min(1, dt * followRate);
+        if (Math.abs(p.bias) < 0.0005 && targetBias === 0) p.bias = 0;
+      });
+      if (state.currentOn) simTime += dt;
+      drawScene();
+      updateUI();
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    bindControls();
+    resizeCanvas();
+    updateUI();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>送電による電力損失の可視化</title>
+  <style>
+    :root {
+      --bg: #f3f5f8;
+      --panel: #ffffff;
+      --ink: #111827;
+      --muted: #596579;
+      --line: #cfd7e3;
+      --wire: #1f2937;
+      --blue: #2563eb;
+      --green: #15803d;
+      --amber: #d97706;
+      --red: #dc2626;
+      --deep-red: #991b1b;
+      --cyan: #0e7490;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 1120px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .app {
+      max-width: 1366px;
+      height: 100vh;
+      min-height: 690px;
+      margin: 0 auto;
+      padding: 10px 14px 12px;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      height: 58px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 23px;
+      line-height: 1.2;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .top-readout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      min-width: 270px;
+    }
+
+    .top-readout div {
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .top-readout span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .top-readout strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 18px;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(700px, 1fr) 392px;
+      gap: 12px;
+      height: calc(100vh - 90px);
+      min-height: 600px;
+    }
+
+    section,
+    aside {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .circuit-panel {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      min-height: 0;
+      padding: 10px;
+    }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      min-height: 28px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.3;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .circuit-wrap {
+      position: relative;
+      min-height: 0;
+      border: 1px solid #e2e7ef;
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 470px;
+      max-height: 100%;
+    }
+
+    .wire {
+      fill: none;
+      stroke: var(--wire);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .wire-hot {
+      fill: none;
+      stroke: var(--wire);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 160ms ease, stroke-width 160ms ease;
+    }
+
+    .symbol {
+      fill: none;
+      stroke: var(--wire);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .core {
+      stroke: #4b5563;
+      stroke-width: 2;
+    }
+
+    .svg-label {
+      fill: var(--ink);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .svg-small {
+      fill: var(--muted);
+      font-size: 12px;
+    }
+
+    .svg-value {
+      fill: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .current-arrow {
+      fill: var(--blue);
+      opacity: 1;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .warning {
+      display: none;
+      margin: 0;
+      padding: 8px 10px;
+      border: 1px solid #fecdd3;
+      border-radius: 8px;
+      background: #fff1f2;
+      color: var(--deep-red);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .model-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    .control {
+      padding: 6px 0 7px;
+      border-bottom: 1px solid #e6ebf2;
+    }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 4px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .control output {
+      color: var(--blue);
+      font-size: 15px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .range-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .preset-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin-top: 5px;
+    }
+
+    .preset-row button {
+      min-height: 24px;
+      padding: 0 3px;
+      border-color: #d1d9e5;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .metric {
+      min-height: 58px;
+      padding: 8px 9px;
+      border: 1px solid #e1e7ef;
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stack-card,
+    .eff-card {
+      padding: 9px;
+      border: 1px solid #e1e7ef;
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      margin-bottom: 7px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .card-head strong {
+      font-size: 16px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stack-bar {
+      display: flex;
+      height: 30px;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #e8edf4;
+      border: 1px solid #d8e0ea;
+    }
+
+    .stack-load,
+    .stack-loss {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2px;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: width 160ms ease, background-color 160ms ease;
+    }
+
+    .stack-load {
+      background: var(--green);
+    }
+
+    .stack-loss {
+      background: var(--amber);
+    }
+
+    .breakdown {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .mini-row {
+      display: grid;
+      grid-template-columns: 72px 1fr 70px;
+      gap: 8px;
+      align-items: center;
+      margin-top: 7px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mini-track {
+      height: 16px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e8edf4;
+    }
+
+    .mini-fill {
+      height: 100%;
+      min-width: 2px;
+      border-radius: 999px;
+      transition: width 160ms ease, background-color 160ms ease;
+    }
+
+    .loss-fill {
+      background: var(--amber);
+    }
+
+    .eff-fill {
+      background: var(--cyan);
+    }
+
+    .mini-value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sum-note {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+      text-align: right;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid #b8c3d2;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    .formula {
+      display: none;
+      max-height: 154px;
+      overflow: auto;
+      padding: 8px;
+      border: 1px solid #dbe3ee;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .formula.visible {
+      display: block;
+    }
+
+    .formula p {
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .formula-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .formula-list li {
+      padding: 6px 7px;
+      border-radius: 6px;
+      background: #f3f6fa;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .formula-list b {
+      display: block;
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    @media (max-height: 735px) {
+      .app {
+        min-height: 0;
+        padding-top: 8px;
+      }
+
+      header {
+        height: 50px;
+        margin-bottom: 8px;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+
+      .lead {
+        font-size: 12px;
+      }
+
+      main {
+        height: calc(100vh - 78px);
+        min-height: 0;
+      }
+
+      svg {
+        min-height: 430px;
+      }
+
+      .metric {
+        min-height: 52px;
+        padding: 6px 8px;
+      }
+
+      .metric strong {
+        font-size: 16px;
+      }
+
+      .control {
+        padding: 4px 0 5px;
+      }
+
+      .model-note {
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>送電による電力損失の可視化</h1>
+        <p class="lead">送電電圧を変えると、送電線を流れる電流と失われる電力がどう変わるかを調べよう。</p>
+      </div>
+      <div class="top-readout" aria-live="polite">
+        <div><span>送電線電流</span><strong id="topCurrent">-- A</strong></div>
+        <div><span>損失率</span><strong id="topLossRate">-- %</strong></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="circuit-panel" aria-labelledby="circuitTitle">
+        <div class="panel-title">
+          <h2 id="circuitTitle">閉回路としての送電回路</h2>
+          <span class="hint">実効値で考える簡略モデル</span>
+        </div>
+
+        <div class="circuit-wrap">
+          <svg viewBox="0 0 820 500" role="img" aria-label="変圧器を含む閉回路としての送電回路図">
+            <defs>
+              <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"></path>
+              </marker>
+            </defs>
+
+            <text x="78" y="50" text-anchor="middle" class="svg-label">発電所側</text>
+            <text x="405" y="50" text-anchor="middle" class="svg-label">高電圧送電側</text>
+            <text x="724" y="50" text-anchor="middle" class="svg-label">利用側</text>
+
+            <text x="118" y="80" text-anchor="middle" class="svg-small">発電機側</text>
+            <text x="118" y="96" text-anchor="middle" class="svg-small">昇圧前</text>
+            <text x="410" y="86" text-anchor="middle" class="svg-value" id="svgVoltage">送電線：-- kV</text>
+            <text x="710" y="86" text-anchor="middle" class="svg-small">100 V / 200 V</text>
+
+            <!-- 発電所側の閉回路 -->
+            <path class="wire" d="M90 220 L90 145 L190 145"></path>
+            <path class="wire" d="M190 355 L90 355 L90 280"></path>
+            <circle cx="90" cy="250" r="30" class="symbol"></circle>
+            <path d="M72 250 C80 234, 100 266, 108 250" class="symbol"></path>
+            <text x="90" y="300" text-anchor="middle" class="svg-small">交流電源</text>
+
+            <!-- 昇圧変圧器 -->
+            <path class="symbol" d="M205 145 q-26 17 0 34 q26 17 0 34 q-26 17 0 34 q26 17 0 34 q-26 17 0 34 q26 17 0 36"></path>
+            <path class="symbol" d="M286 145 q32 17 0 34 q-32 17 0 34 q32 17 0 34 q-32 17 0 34 q32 17 0 34 q-32 17 0 36"></path>
+            <line class="core" x1="238" y1="128" x2="238" y2="372"></line>
+            <line class="core" x1="250" y1="128" x2="250" y2="372"></line>
+            <text x="244" y="410" text-anchor="middle" class="svg-label">昇圧変圧器</text>
+            <text x="205" y="390" text-anchor="middle" class="svg-small">一次</text>
+            <text x="286" y="390" text-anchor="middle" class="svg-small">二次</text>
+
+            <!-- 高電圧送電側の閉回路 -->
+            <path class="wire-hot" id="wireTopLeft" d="M286 145 L355 145"></path>
+            <path class="wire-hot" id="resistorPath" d="M355 145 L365 128 L382 162 L399 128 L416 162 L433 128 L450 162 L460 145"></path>
+            <path class="wire-hot" id="wireTopRight" d="M460 145 L555 145"></path>
+            <path class="wire-hot" id="wireBottom" d="M555 355 L286 355"></path>
+            <text x="407" y="122" text-anchor="middle" class="svg-small">送電線抵抗</text>
+            <text x="407" y="185" text-anchor="middle" class="svg-value" id="svgResistance">R_line = -- Ω</text>
+            <text x="409" y="222" text-anchor="middle" class="svg-value" id="svgLoss">P_loss = --</text>
+            <text x="409" y="244" text-anchor="middle" class="svg-value" id="svgLossRate">損失率 -- %</text>
+
+            <line class="current-arrow" id="arrow1" x1="310" y1="116" x2="352" y2="116" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowHead)"></line>
+            <line class="current-arrow" id="arrow2" x1="480" y1="116" x2="522" y2="116" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowHead)"></line>
+            <line class="current-arrow" id="arrow3" x1="520" y1="384" x2="478" y2="384" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowHead)"></line>
+            <text x="408" y="106" text-anchor="middle" class="svg-value" id="svgCurrent">I_line = -- A</text>
+
+            <!-- 降圧変圧器 -->
+            <path class="symbol" d="M570 145 q-32 17 0 34 q32 17 0 34 q-32 17 0 34 q32 17 0 34 q-32 17 0 34 q32 17 0 36"></path>
+            <path class="symbol" d="M651 165 q26 14 0 28 q-26 14 0 28 q26 14 0 28 q-26 14 0 28 q26 14 0 28 q-26 14 0 30"></path>
+            <line class="core" x1="606" y1="128" x2="606" y2="372"></line>
+            <line class="core" x1="618" y1="128" x2="618" y2="372"></line>
+            <text x="612" y="410" text-anchor="middle" class="svg-label">降圧変圧器</text>
+            <text x="570" y="390" text-anchor="middle" class="svg-small">一次</text>
+            <text x="651" y="390" text-anchor="middle" class="svg-small">二次</text>
+
+            <!-- 利用側の閉回路 -->
+            <path class="wire" d="M651 165 L728 165"></path>
+            <path class="wire" d="M728 335 L651 335"></path>
+            <path class="symbol" d="M728 165 L745 178 L711 195 L745 212 L711 229 L745 246 L711 263 L745 280 L711 297 L745 314 L728 335"></path>
+            <text x="760" y="248" text-anchor="middle" class="svg-label">負荷</text>
+            <text x="760" y="268" text-anchor="middle" class="svg-small">需要地</text>
+
+            <!-- 補助アイコン -->
+            <rect x="675" y="372" width="36" height="30" fill="#ffffff" stroke="#6b7280" stroke-width="2"></rect>
+            <path d="M669 372 L693 352 L717 372" fill="#ffffff" stroke="#6b7280" stroke-width="2"></path>
+            <rect x="688" y="386" width="8" height="16" fill="#ffffff" stroke="#6b7280" stroke-width="1.5"></rect>
+            <rect x="724" y="360" width="44" height="42" fill="#ffffff" stroke="#6b7280" stroke-width="2"></rect>
+            <rect x="733" y="376" width="7" height="26" fill="#ffffff" stroke="#6b7280" stroke-width="1.5"></rect>
+            <rect x="747" y="368" width="7" height="34" fill="#ffffff" stroke="#6b7280" stroke-width="1.5"></rect>
+
+            <text x="86" y="452" text-anchor="middle" class="svg-small">閉回路1</text>
+            <text x="408" y="452" text-anchor="middle" class="svg-small">閉回路2：送電線を含む回路</text>
+            <text x="708" y="452" text-anchor="middle" class="svg-small">閉回路3</text>
+          </svg>
+        </div>
+
+        <p class="warning" id="lossWarning">この条件では送電線での損失が非常に大きく、現実的な送電条件とは言いにくいです。送電電圧を上げるとどう変わるか確認しましょう。</p>
+        <p class="model-note">このシミュレーションでは、送電線の抵抗による発熱だけを考えています。変圧器での損失などは考えない簡単なモデルです。</p>
+      </section>
+
+      <aside class="side-panel" aria-labelledby="controlTitle">
+        <h2 id="controlTitle">操作と結果</h2>
+
+        <div class="control">
+          <label for="voltage">送電電圧（昇圧後）<output id="voltageValue">66 kV</output></label>
+          <input id="voltage" type="range" min="6.6" max="500" step="1" value="66">
+          <div class="range-row"><span>6.6 kV</span><span>500 kV</span></div>
+          <div class="preset-row" aria-label="送電電圧プリセット">
+            <button type="button" data-voltage="6.6">6.6 kV</button>
+            <button type="button" data-voltage="66">66 kV</button>
+            <button type="button" data-voltage="154">154 kV</button>
+            <button type="button" data-voltage="275">275 kV</button>
+            <button type="button" data-voltage="500">500 kV</button>
+          </div>
+        </div>
+
+        <div class="control">
+          <label for="resistance">送電線の抵抗<output id="resistanceValue">10 Ω</output></label>
+          <input id="resistance" type="range" min="1" max="50" step="1" value="10">
+          <div class="range-row"><span>1 Ω</span><span>50 Ω</span></div>
+        </div>
+
+        <div class="control">
+          <label for="load">需要地に届ける電力<output id="loadValue">5.0 MW</output></label>
+          <input id="load" type="range" min="0.5" max="20" step="0.5" value="5">
+          <div class="range-row"><span>0.5 MW</span><span>20 MW</span></div>
+        </div>
+
+        <div class="result-grid" aria-live="polite">
+          <div class="metric"><span>送電線電流</span><strong id="metricCurrent">-- A</strong></div>
+          <div class="metric"><span>損失電力</span><strong id="metricLoss">-- kW</strong></div>
+          <div class="metric"><span>損失率</span><strong id="metricLossRate">-- %</strong></div>
+          <div class="metric"><span>送電効率</span><strong id="metricEfficiency">-- %</strong></div>
+        </div>
+
+        <div class="stack-card" aria-live="polite">
+          <div class="card-head">
+            <span>発電所が送り出す電力</span>
+            <strong id="genTotal">-- MW</strong>
+          </div>
+          <div class="stack-bar" aria-label="発電所が送り出す電力の内訳">
+            <div class="stack-load" id="stackLoad">需要地へ</div>
+            <div class="stack-loss" id="stackLoss">損失</div>
+          </div>
+          <div class="breakdown">
+            <span id="breakdownLoad">需要地に届く電力 -- MW</span>
+            <span id="breakdownLoss">損失 -- kW</span>
+          </div>
+        </div>
+
+        <div class="eff-card" aria-live="polite">
+          <div class="mini-row">
+            <span>損失率</span>
+            <div class="mini-track"><div class="mini-fill loss-fill" id="lossRateBar"></div></div>
+            <span class="mini-value" id="lossRateBarValue">-- %</span>
+          </div>
+          <div class="mini-row">
+            <span>効率</span>
+            <div class="mini-track"><div class="mini-fill eff-fill" id="effBar"></div></div>
+            <span class="mini-value" id="effBarValue">-- %</span>
+          </div>
+          <p class="sum-note" id="sumNote">送電効率 + 損失率 = 100 %</p>
+        </div>
+
+        <div class="button-row">
+          <button type="button" id="resetButton">リセット</button>
+          <button type="button" class="primary" id="formulaButton" aria-expanded="false">数式を表示</button>
+        </div>
+
+        <div class="formula" id="formulaPanel">
+          <ul class="formula-list">
+            <li><b>電力 = 電圧 × 電流</b>P = VI</li>
+            <li><b>送電線での損失 = 電流^2 × 送電線の抵抗</b>P_loss = I^2 R_line</li>
+            <li><b>同じ電力を送るときの電流 = 需要地に届ける電力 ÷ 送電電圧</b>I_line = P_load / V_trans</li>
+            <li><b>発電所が送り出す電力 = 需要地に届く電力 + 送電線での損失</b>P_gen = P_load + P_loss</li>
+            <li><b>送電効率 = 需要地に届く電力 ÷ 発電所が送り出した電力 × 100</b>η = P_load / P_gen × 100</li>
+            <li><b>損失率 = 送電線での損失 ÷ 発電所が送り出した電力 × 100</b>lossRate = P_loss / P_gen × 100</li>
+          </ul>
+          <p>電圧を大きくすると、同じ電力を送るための電流は小さくなる。損失は電流の2乗に比例するため、電流が小さくなると大きく減る。</p>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const defaults = {
+      voltage: 66,
+      resistance: 10,
+      load: 5,
+      formulaVisible: false
+    };
+
+    const els = {
+      voltage: document.getElementById("voltage"),
+      resistance: document.getElementById("resistance"),
+      load: document.getElementById("load"),
+      voltageValue: document.getElementById("voltageValue"),
+      resistanceValue: document.getElementById("resistanceValue"),
+      loadValue: document.getElementById("loadValue"),
+      topCurrent: document.getElementById("topCurrent"),
+      topLossRate: document.getElementById("topLossRate"),
+      metricCurrent: document.getElementById("metricCurrent"),
+      metricLoss: document.getElementById("metricLoss"),
+      metricLossRate: document.getElementById("metricLossRate"),
+      metricEfficiency: document.getElementById("metricEfficiency"),
+      genTotal: document.getElementById("genTotal"),
+      stackLoad: document.getElementById("stackLoad"),
+      stackLoss: document.getElementById("stackLoss"),
+      breakdownLoad: document.getElementById("breakdownLoad"),
+      breakdownLoss: document.getElementById("breakdownLoss"),
+      lossRateBar: document.getElementById("lossRateBar"),
+      lossRateBarValue: document.getElementById("lossRateBarValue"),
+      effBar: document.getElementById("effBar"),
+      effBarValue: document.getElementById("effBarValue"),
+      sumNote: document.getElementById("sumNote"),
+      presetButtons: document.querySelectorAll("[data-voltage]"),
+      wireTopLeft: document.getElementById("wireTopLeft"),
+      wireTopRight: document.getElementById("wireTopRight"),
+      wireBottom: document.getElementById("wireBottom"),
+      resistorPath: document.getElementById("resistorPath"),
+      arrow1: document.getElementById("arrow1"),
+      arrow2: document.getElementById("arrow2"),
+      arrow3: document.getElementById("arrow3"),
+      svgVoltage: document.getElementById("svgVoltage"),
+      svgResistance: document.getElementById("svgResistance"),
+      svgCurrent: document.getElementById("svgCurrent"),
+      svgLoss: document.getElementById("svgLoss"),
+      svgLossRate: document.getElementById("svgLossRate"),
+      lossWarning: document.getElementById("lossWarning"),
+      formulaButton: document.getElementById("formulaButton"),
+      formulaPanel: document.getElementById("formulaPanel"),
+      resetButton: document.getElementById("resetButton")
+    };
+
+    function calculate() {
+      const voltageKV = Number(els.voltage.value);
+      const resistanceOhm = Number(els.resistance.value);
+      const loadMW = Number(els.load.value);
+      const currentA = (loadMW * 1000000) / (voltageKV * 1000);
+      const lossW = currentA * currentA * resistanceOhm;
+      const lossMW = lossW / 1000000;
+      const genMW = loadMW + lossMW;
+      const efficiency = (loadMW / genMW) * 100;
+      const lossRate = (lossMW / genMW) * 100;
+
+      return { voltageKV, resistanceOhm, loadMW, currentA, lossW, lossMW, genMW, efficiency, lossRate };
+    }
+
+    function formatVoltage(value) {
+      return `${value.toFixed(value % 1 === 0 ? 0 : 1)} kV`;
+    }
+
+    function formatPowerFromW(watts) {
+      if (watts >= 1000000) {
+        return `${(watts / 1000000).toFixed(2)} MW`;
+      }
+      return `${(watts / 1000).toFixed(1)} kW`;
+    }
+
+    function formatMW(value) {
+      return `${value.toFixed(value < 10 ? 2 : 1)} MW`;
+    }
+
+    function formatPercent(value) {
+      if (value >= 100) return `${value.toFixed(0)} %`;
+      return `${value.toFixed(value < 10 ? 1 : 0)} %`;
+    }
+
+    function setWidth(el, percent) {
+      el.style.width = `${Math.max(1, Math.min(100, percent))}%`;
+    }
+
+    function lossColor(lossRate) {
+      if (lossRate >= 50) return "#991b1b";
+      if (lossRate >= 10) return "#dc2626";
+      if (lossRate >= 1) return "#d97706";
+      return "#1f2937";
+    }
+
+    function updateCircuitStyle(data) {
+      const color = lossColor(data.lossRate);
+      const width = data.lossRate >= 50 ? 6 : data.lossRate >= 10 ? 5 : data.lossRate >= 1 ? 4.5 : 4;
+      [els.wireTopLeft, els.wireTopRight, els.wireBottom, els.resistorPath].forEach((wire) => {
+        wire.style.stroke = color;
+        wire.style.strokeWidth = width;
+      });
+
+      const currentScale = Math.min(1, data.currentA / 450);
+      const arrowWidth = 2.5 + currentScale * 5;
+      const arrowOpacity = 0.35 + currentScale * 0.65;
+      [els.arrow1, els.arrow2, els.arrow3].forEach((arrow) => {
+        arrow.style.strokeWidth = arrowWidth;
+        arrow.style.opacity = arrowOpacity;
+      });
+
+      els.arrow2.style.display = data.currentA >= 80 ? "block" : "none";
+      els.arrow3.style.display = data.currentA >= 180 ? "block" : "none";
+      els.lossWarning.style.display = data.lossRate >= 50 ? "block" : "none";
+      els.stackLoss.style.backgroundColor = color === "#1f2937" ? "#d97706" : color;
+      els.lossRateBar.style.backgroundColor = color === "#1f2937" ? "#d97706" : color;
+    }
+
+    function update() {
+      const data = calculate();
+      const loadShare = (data.loadMW / data.genMW) * 100;
+      const lossShare = (data.lossMW / data.genMW) * 100;
+
+      els.voltageValue.textContent = formatVoltage(data.voltageKV);
+      els.resistanceValue.textContent = `${data.resistanceOhm.toFixed(0)} Ω`;
+      els.loadValue.textContent = `${data.loadMW.toFixed(1)} MW`;
+
+      const currentText = `${data.currentA.toFixed(data.currentA < 100 ? 1 : 0)} A`;
+      const lossText = formatPowerFromW(data.lossW);
+      const lossRateText = formatPercent(data.lossRate);
+      const efficiencyText = formatPercent(data.efficiency);
+
+      els.topCurrent.textContent = currentText;
+      els.topLossRate.textContent = lossRateText;
+      els.metricCurrent.textContent = currentText;
+      els.metricLoss.textContent = lossText;
+      els.metricLossRate.textContent = lossRateText;
+      els.metricEfficiency.textContent = efficiencyText;
+
+      els.genTotal.textContent = formatMW(data.genMW);
+      setWidth(els.stackLoad, loadShare);
+      setWidth(els.stackLoss, lossShare);
+      els.stackLoad.textContent = loadShare > 18 ? "需要地へ" : "";
+      els.stackLoss.textContent = lossShare > 12 ? "損失" : "";
+      els.breakdownLoad.textContent = `需要地に届く電力 ${data.loadMW.toFixed(2)} MW`;
+      els.breakdownLoss.textContent = `損失 ${lossText}`;
+
+      setWidth(els.lossRateBar, data.lossRate);
+      setWidth(els.effBar, data.efficiency);
+      els.lossRateBarValue.textContent = lossRateText;
+      els.effBarValue.textContent = efficiencyText;
+      els.sumNote.textContent = `送電効率 + 損失率 = ${(data.efficiency + data.lossRate).toFixed(1)} %`;
+
+      els.svgVoltage.textContent = `送電線：${formatVoltage(data.voltageKV)}`;
+      els.svgResistance.textContent = `R_line = ${data.resistanceOhm.toFixed(0)} Ω`;
+      els.svgCurrent.textContent = `I_line = ${currentText}`;
+      els.svgLoss.textContent = `P_loss = ${lossText}`;
+      els.svgLossRate.textContent = `損失率 ${lossRateText}`;
+
+      updateCircuitStyle(data);
+    }
+
+    function setFormulaVisible(visible) {
+      els.formulaPanel.classList.toggle("visible", visible);
+      els.formulaButton.textContent = visible ? "数式を隠す" : "数式を表示";
+      els.formulaButton.setAttribute("aria-expanded", String(visible));
+    }
+
+    [els.voltage, els.resistance, els.load].forEach((input) => {
+      input.addEventListener("input", update);
+    });
+
+    els.presetButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        els.voltage.value = button.dataset.voltage;
+        update();
+      });
+    });
+
+    els.formulaButton.addEventListener("click", () => {
+      setFormulaVisible(!els.formulaPanel.classList.contains("visible"));
+    });
+
+    els.resetButton.addEventListener("click", () => {
+      els.voltage.value = defaults.voltage;
+      els.resistance.value = defaults.resistance;
+      els.load.value = defaults.load;
+      setFormulaVisible(defaults.formulaVisible);
+      update();
+    });
+
+    setFormulaVisible(defaults.formulaVisible);
+    update();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アトウッドの機械：質量差・全体の質量・加速度</title>
+  <style>
+    :root {
+      --blue: #0b63e6;
+      --blue-dark: #084fb8;
+      --blue-soft: #eaf3ff;
+      --green: #12a13b;
+      --red: #e81e1e;
+      --yellow: #ffcb55;
+      --ink: #142033;
+      --muted: #66758a;
+      --line: #d9e1ec;
+      --panel: #ffffff;
+      --bg: #f4f7fb;
+      --shadow: 0 10px 30px rgba(40, 64, 96, 0.08);
+      --radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Yu Gothic", "Hiragino Sans", "Meiryo", system-ui, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+      min-width: 1080px;
+    }
+
+    .app {
+      width: min(1560px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 22px 0 18px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .logo {
+      width: 72px;
+      height: 72px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: var(--blue-soft);
+      border: 1px solid #c8dcff;
+    }
+
+    .logo svg {
+      width: 54px;
+      height: 54px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(26px, 2.4vw, 38px);
+      letter-spacing: 0;
+      line-height: 1.15;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 390px) minmax(520px, 1fr) minmax(330px, 450px);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 18px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-title {
+      margin: 0;
+      color: var(--blue);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .graph-card {
+      height: 390px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .graph-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      padding: 6px 16px 16px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .summary {
+      padding: 6px 18px 16px;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: 38px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #edf1f6;
+      font-size: 17px;
+    }
+
+    .summary-row:last-child {
+      border-bottom: 0;
+    }
+
+    .badge {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 900;
+      font-style: italic;
+      font-size: 20px;
+    }
+
+    .badge.a { background: var(--red); }
+    .badge.v { background: var(--blue); }
+    .badge.t { background: var(--green); }
+    .badge.g { background: #8747c9; }
+
+    .summary-label {
+      font-weight: 800;
+    }
+
+    .summary-label small {
+      display: block;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .summary-value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .simulation-card {
+      position: relative;
+      min-height: 678px;
+      height: calc(100vh - 142px);
+      max-height: 760px;
+    }
+
+    .sim-label {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 2;
+      background: var(--blue);
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+    }
+
+    .stopwatch {
+      position: absolute;
+      right: 20px;
+      top: 86px;
+      width: 178px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 8px 22px rgba(30, 55, 90, 0.12);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stopwatch.hidden {
+      display: none;
+    }
+
+    .stopwatch-title {
+      color: var(--blue);
+      font-weight: 900;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .stopwatch-time {
+      color: var(--blue);
+      font-size: 43px;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stopwatch-time span {
+      font-size: 20px;
+      margin-left: 4px;
+    }
+
+    .panel {
+      padding: 16px 20px;
+    }
+
+    .param-row {
+      display: grid;
+      grid-template-columns: 112px 1fr 82px 24px;
+      align-items: center;
+      gap: 12px;
+      margin: 13px 0;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    input[type="number"], .readonly-value {
+      width: 82px;
+      border: 1px solid #cfd8e5;
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px 8px;
+      font: inherit;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      box-shadow: inset 0 1px 2px rgba(20, 32, 51, 0.04);
+    }
+
+    .readonly-value {
+      color: #536273;
+      background: #f5f7fa;
+      display: inline-block;
+    }
+
+    .option-list {
+      display: grid;
+      gap: 13px;
+      margin-top: 8px;
+    }
+
+    .option-list label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--blue);
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .buttons button {
+      border: 0;
+      border-radius: 8px;
+      min-height: 58px;
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.12s ease;
+    }
+
+    .buttons button:active {
+      transform: translateY(1px);
+    }
+
+    .start {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(11, 99, 230, 0.22);
+    }
+
+    .pause {
+      background: var(--yellow);
+      color: #1d2330;
+    }
+
+    .reset {
+      grid-column: 1 / -1;
+      background: #fff;
+      color: var(--red);
+      border: 1px solid var(--line) !important;
+    }
+
+    button:hover {
+      filter: brightness(0.98);
+    }
+
+    .info {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 20px;
+      background: #eef6ff;
+      color: #173b70;
+      border: 1px solid #cce1ff;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .info-mark {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 21px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    @media (max-width: 1180px) {
+      .layout {
+        grid-template-columns: 330px minmax(480px, 1fr) 330px;
+        gap: 12px;
+      }
+
+      .param-row {
+        grid-template-columns: 96px 1fr 76px 22px;
+      }
+
+      .stopwatch {
+        right: 14px;
+        width: 160px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M40 8v16" stroke="#0b63e6" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="40" cy="30" r="11" fill="#fff" stroke="#0b63e6" stroke-width="6"/>
+          <path d="M40 41v18M16 24v28M64 30v23" stroke="#0b63e6" stroke-width="6" stroke-linecap="round"/>
+          <rect x="5" y="49" width="23" height="23" rx="4" fill="#0b63e6"/>
+          <circle cx="64" cy="61" r="10" fill="#fff" stroke="#0b63e6" stroke-width="6"/>
+        </svg>
+      </div>
+      <div>
+        <h1>アトウッドの機械：質量差・全体の質量・加速度</h1>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="column">
+        <article class="card graph-card">
+          <div class="card-header">
+            <h2 class="card-title">速度－時間グラフ</h2>
+          </div>
+          <div class="graph-wrap">
+            <canvas id="graphCanvas" aria-label="速度と時間のグラフ"></canvas>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <h2 class="card-title">現在の状態（数値サマリー）</h2>
+          </div>
+          <div class="summary">
+            <div class="summary-row">
+              <span class="badge a">a</span>
+              <span class="summary-label">加速度 a</span>
+              <span class="summary-value" id="accelValue">0.000 m/s²</span>
+            </div>
+            <div class="summary-row">
+              <span class="badge v">v</span>
+              <span class="summary-label">速度 v</span>
+              <span class="summary-value" id="velocityValue">0.000 m/s</span>
+            </div>
+            <div class="summary-row">
+              <span class="badge t">t</span>
+              <span class="summary-label">経過時間 t</span>
+              <span class="summary-value" id="timeValue">00.00 s</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card simulation-card">
+        <div class="sim-label">シミュレーション</div>
+        <canvas id="simCanvas" aria-label="アトウッドの機械のシミュレーション"></canvas>
+        <div class="stopwatch" id="stopwatchPanel">
+          <div class="stopwatch-title">ストップウォッチ</div>
+          <div class="stopwatch-time" id="stopwatchTime">00.00<span>s</span></div>
+        </div>
+      </section>
+
+      <aside class="column">
+        <article class="card panel" id="settingsPanel">
+          <h2 class="card-title">パラメータ設定</h2>
+          <div class="param-row">
+            <label for="leftMassRange">左の質量</label>
+            <input id="leftMassRange" type="range" min="50" max="1000" step="10" value="500">
+            <input id="leftMassInput" type="number" min="50" max="1000" step="10" value="500">
+            <span>g</span>
+          </div>
+          <div class="param-row">
+            <label for="rightMassRange">右の質量</label>
+            <input id="rightMassRange" type="range" min="50" max="1000" step="10" value="480">
+            <input id="rightMassInput" type="number" min="50" max="1000" step="10" value="480">
+            <span>g</span>
+          </div>
+          <div class="param-row">
+            <span>総質量</span>
+            <input type="range" min="100" max="2000" value="980" disabled>
+            <span class="readonly-value" id="totalMassValue">980</span>
+            <span>g</span>
+          </div>
+          <div class="param-row">
+            <span>質量差（左－右）</span>
+            <input type="range" min="-950" max="950" value="20" disabled>
+            <span class="readonly-value" id="diffMassValue">20</span>
+            <span>g</span>
+          </div>
+        </article>
+
+        <article class="card panel">
+          <h2 class="card-title">表示オプション</h2>
+          <div class="option-list">
+            <label><input id="showSettings" type="checkbox" checked>設定を表示</label>
+            <label><input id="showVelocity" type="checkbox" checked>速度ベクトル</label>
+            <label><input id="showAcceleration" type="checkbox" checked>加速度ベクトル</label>
+            <label><input id="showStopwatch" type="checkbox" checked>ストップウォッチを表示</label>
+          </div>
+        </article>
+
+        <article class="buttons" aria-label="操作ボタン">
+          <button class="start" id="startButton" type="button">▶ スタート</button>
+          <button class="pause" id="pauseButton" type="button">Ⅱ 一時停止</button>
+          <button class="reset" id="resetButton" type="button">↻ リセット</button>
+        </article>
+      </aside>
+    </main>
+
+    <div class="info">
+      <span class="info-mark">i</span>
+      <span>理想条件：摩擦なし・糸と滑車の質量なし・糸は伸びないと仮定しています。</span>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const G = 9.8;
+      const MEASURE_DISTANCE = 1.00;
+      const MAX_TRAVEL = 1.06;
+      const PIXELS_PER_METER = 170;
+      const GRAPH_TIME_MAX = 5.0;
+      const GRAPH_SPEED_MAX = 5.0;
+
+      const elements = {
+        simCanvas: document.getElementById("simCanvas"),
+        graphCanvas: document.getElementById("graphCanvas"),
+        leftMassRange: document.getElementById("leftMassRange"),
+        rightMassRange: document.getElementById("rightMassRange"),
+        leftMassInput: document.getElementById("leftMassInput"),
+        rightMassInput: document.getElementById("rightMassInput"),
+        totalMassValue: document.getElementById("totalMassValue"),
+        diffMassValue: document.getElementById("diffMassValue"),
+        accelValue: document.getElementById("accelValue"),
+        velocityValue: document.getElementById("velocityValue"),
+        timeValue: document.getElementById("timeValue"),
+        stopwatchPanel: document.getElementById("stopwatchPanel"),
+        stopwatchTime: document.getElementById("stopwatchTime"),
+        settingsPanel: document.getElementById("settingsPanel"),
+        showSettings: document.getElementById("showSettings"),
+        showVelocity: document.getElementById("showVelocity"),
+        showAcceleration: document.getElementById("showAcceleration"),
+        showStopwatch: document.getElementById("showStopwatch"),
+        startButton: document.getElementById("startButton"),
+        pauseButton: document.getElementById("pauseButton"),
+        resetButton: document.getElementById("resetButton")
+      };
+
+      const simCtx = elements.simCanvas.getContext("2d");
+      const graphCtx = elements.graphCanvas.getContext("2d");
+
+      const state = {
+        leftMass: 500,
+        rightMass: 480,
+        acceleration: 0,
+        velocity: 0,
+        displacement: 0,
+        simTime: 0,
+        running: false,
+        lastFrame: null,
+        graphPoints: [{ t: 0, v: 0 }],
+        measuredTime: null,
+        measuredDistance: null
+      };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function formatTime(value) {
+        return value.toFixed(2).padStart(5, "0") + " s";
+      }
+
+      function massFactor(grams) {
+        return clamp(0.86 + (grams - 50) / 950 * 0.28, 0.86, 1.14);
+      }
+
+      function resizeCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const width = Math.max(1, Math.round(rect.width * dpr));
+        const height = Math.max(1, Math.round(rect.height * dpr));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { width: rect.width, height: rect.height };
+      }
+
+      function updatePhysicsValues() {
+        const total = state.leftMass + state.rightMass;
+        const diff = state.leftMass - state.rightMass;
+        state.acceleration = total === 0 ? 0 : diff / total * G;
+        elements.totalMassValue.textContent = total.toFixed(0);
+        elements.diffMassValue.textContent = diff.toFixed(0);
+      }
+
+      function setMass(side, value) {
+        const next = clamp(Math.round(Number(value) / 10) * 10, 50, 1000);
+        if (side === "left") {
+          state.leftMass = next;
+          elements.leftMassRange.value = next;
+          elements.leftMassInput.value = next;
+        } else {
+          state.rightMass = next;
+          elements.rightMassRange.value = next;
+          elements.rightMassInput.value = next;
+        }
+        updatePhysicsValues();
+        updateReadouts();
+        drawAll();
+      }
+
+      function resetSimulation() {
+        state.running = false;
+        state.velocity = 0;
+        state.displacement = 0;
+        state.simTime = 0;
+        state.lastFrame = null;
+        state.graphPoints = [{ t: 0, v: 0 }];
+        state.measuredTime = null;
+        state.measuredDistance = null;
+        updatePhysicsValues();
+        updateReadouts();
+        drawAll();
+      }
+
+      function stopAtMeasurement() {
+        const direction = Math.sign(state.acceleration);
+        if (direction === 0) return;
+        const target = direction * MEASURE_DISTANCE;
+        state.displacement = target;
+        state.measuredTime = state.simTime;
+        state.measuredDistance = MEASURE_DISTANCE;
+        state.running = false;
+        state.lastFrame = null;
+      }
+
+      function step(timestamp) {
+        if (!state.running) return;
+        if (state.lastFrame === null) state.lastFrame = timestamp;
+        const rawDt = (timestamp - state.lastFrame) / 1000;
+        const dt = Math.min(rawDt, 0.04);
+        state.lastFrame = timestamp;
+
+        const previousDisplacement = state.displacement;
+        state.displacement += state.velocity * dt + 0.5 * state.acceleration * dt * dt;
+        state.velocity += state.acceleration * dt;
+        state.simTime += dt;
+
+        const direction = Math.sign(state.acceleration);
+        const reachedLine = direction !== 0 &&
+          Math.abs(previousDisplacement) < MEASURE_DISTANCE &&
+          Math.abs(state.displacement) >= MEASURE_DISTANCE;
+
+        if (reachedLine) {
+          const overshoot = Math.abs(state.displacement) - MEASURE_DISTANCE;
+          const speed = Math.max(Math.abs(state.velocity), 0.0001);
+          state.simTime = Math.max(0, state.simTime - overshoot / speed);
+          stopAtMeasurement();
+        }
+
+        if (Math.abs(state.displacement) > MAX_TRAVEL) {
+          state.displacement = Math.sign(state.displacement) * MAX_TRAVEL;
+          state.running = false;
+          state.lastFrame = null;
+        }
+
+        state.graphPoints.push({ t: state.simTime, v: state.velocity });
+        if (state.graphPoints.length > 900) state.graphPoints.shift();
+        updateReadouts();
+        drawAll();
+        if (state.running) requestAnimationFrame(step);
+      }
+
+      function updateReadouts() {
+        const signedAccel = state.acceleration;
+        const signedVelocity = state.velocity;
+        elements.accelValue.textContent = `${signedAccel.toFixed(3)} m/s²`;
+        elements.velocityValue.textContent = `${signedVelocity.toFixed(3)} m/s`;
+        elements.timeValue.textContent = formatTime(state.simTime);
+        elements.stopwatchTime.innerHTML = `${state.simTime.toFixed(2).padStart(5, "0")}<span>s</span>`;
+      }
+
+      function drawRoundedRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+
+      function drawArrow(ctx, x, y, length, color, label, alignRight) {
+        const absLength = Math.abs(length);
+        if (absLength < 4) return;
+        const dir = Math.sign(length);
+        const endY = y + length;
+        const head = clamp(absLength * 0.45, 6, 18);
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, endY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, endY + dir * 3);
+        ctx.lineTo(x - head * 0.5, endY - dir * head);
+        ctx.lineTo(x + head * 0.5, endY - dir * head);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = "800 17px sans-serif";
+        ctx.textAlign = alignRight ? "right" : "left";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#142033";
+        ctx.fillText(label, alignRight ? x - 22 : x + 22, y + length / 2);
+        ctx.restore();
+      }
+
+      function drawSim() {
+        const { width, height } = resizeCanvas(elements.simCanvas);
+        simCtx.clearRect(0, 0, width, height);
+
+        const cx = width / 2;
+        const pulleyY = 118;
+        const pulleyR = 58;
+        const leftX = cx - pulleyR;
+        const rightX = cx + pulleyR;
+        const baseY = clamp(height * 0.56, pulleyY + pulleyR + PIXELS_PER_METER + 38, height - PIXELS_PER_METER - 104);
+        const bottomLineY = baseY + MEASURE_DISTANCE * PIXELS_PER_METER;
+        const leftY = baseY + state.displacement * PIXELS_PER_METER;
+        const rightY = baseY - state.displacement * PIXELS_PER_METER;
+        const blockWLeft = 42 * massFactor(state.leftMass);
+        const blockHLeft = 48 * massFactor(state.leftMass);
+        const blockWRight = 42 * massFactor(state.rightMass);
+        const blockHRight = 48 * massFactor(state.rightMass);
+        const stopwatchTop = clamp(bottomLineY - 132, 86, height - 150);
+        elements.stopwatchPanel.style.top = `${stopwatchTop}px`;
+
+        const grad = simCtx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, "#ffffff");
+        grad.addColorStop(1, "#f8fbff");
+        simCtx.fillStyle = grad;
+        simCtx.fillRect(0, 0, width, height);
+
+        simCtx.strokeStyle = "#15ad45";
+        simCtx.setLineDash([10, 8]);
+        simCtx.lineWidth = 2;
+        simCtx.beginPath();
+        simCtx.moveTo(Math.max(28, cx - 220), bottomLineY);
+        simCtx.lineTo(Math.min(width - 28, cx + 220), bottomLineY);
+        simCtx.stroke();
+        simCtx.setLineDash([]);
+        simCtx.fillStyle = "#0a9f34";
+        simCtx.font = "800 16px sans-serif";
+        simCtx.textAlign = "right";
+        simCtx.fillText("測定ライン", Math.min(width - 32, cx + 218), bottomLineY + 33);
+
+        simCtx.strokeStyle = "#6f4b27";
+        simCtx.lineWidth = 3;
+        simCtx.beginPath();
+        simCtx.moveTo(leftX, leftY - blockHLeft / 2);
+        simCtx.lineTo(leftX, pulleyY);
+        simCtx.arc(cx, pulleyY, pulleyR, Math.PI, 0);
+        simCtx.lineTo(rightX, rightY - blockHRight / 2);
+        simCtx.stroke();
+
+        simCtx.fillStyle = "#c4ccd6";
+        simCtx.fillRect(cx - 22, pulleyY - 82, 44, 92);
+        simCtx.fillStyle = "#252f3b";
+        simCtx.fillRect(cx - 150, pulleyY - 94, 300, 16);
+        simCtx.fillStyle = "#d5dbe3";
+        simCtx.fillRect(cx - 146, pulleyY - 93, 292, 6);
+
+        const pulleyGrad = simCtx.createRadialGradient(cx - 20, pulleyY - 20, 10, cx, pulleyY, pulleyR);
+        pulleyGrad.addColorStop(0, "#f4f7fb");
+        pulleyGrad.addColorStop(0.55, "#c6ced9");
+        pulleyGrad.addColorStop(1, "#8793a2");
+        simCtx.fillStyle = pulleyGrad;
+        simCtx.strokeStyle = "#26313d";
+        simCtx.lineWidth = 3;
+        simCtx.beginPath();
+        simCtx.arc(cx, pulleyY, pulleyR, 0, Math.PI * 2);
+        simCtx.fill();
+        simCtx.stroke();
+        simCtx.strokeStyle = "#495566";
+        simCtx.lineWidth = 4;
+        simCtx.beginPath();
+        simCtx.arc(cx, pulleyY, pulleyR - 18, 0, Math.PI * 2);
+        simCtx.stroke();
+        simCtx.fillStyle = "#e8edf3";
+        simCtx.strokeStyle = "#495566";
+        simCtx.lineWidth = 4;
+        simCtx.beginPath();
+        simCtx.arc(cx, pulleyY, 12, 0, Math.PI * 2);
+        simCtx.fill();
+        simCtx.stroke();
+
+        drawRuler(cx - 105, baseY, bottomLineY, height);
+        drawBlock(leftX, leftY, blockWLeft, blockHLeft, "#1569d8", state.leftMass, "左のおもり", true, baseY);
+        drawBlock(rightX, rightY, blockWRight, blockHRight, "#2fa848", state.rightMass, "右のおもり", false, baseY);
+
+        const vectorBaseX = Math.max(78, cx - 310);
+        const vectorBaseY = Math.max(300, height * 0.50);
+        if (elements.showVelocity.checked && Math.abs(state.velocity) > 0.01) {
+          const maxVectorLength = 120;
+          const vLen = Math.min(Math.abs(state.velocity), GRAPH_SPEED_MAX) / GRAPH_SPEED_MAX * maxVectorLength * Math.sign(state.velocity);
+          drawArrow(simCtx, vectorBaseX, vectorBaseY, vLen, varBlue(), "速度 v", true);
+        }
+        if (elements.showAcceleration.checked) {
+          const aLen = clamp(Math.abs(state.acceleration) * 70, 12, 82) * Math.sign(state.acceleration);
+          drawArrow(simCtx, vectorBaseX, vectorBaseY + 108, aLen, varRed(), "加速度 a", true);
+        }
+      }
+
+      function varBlue() {
+        return getComputedStyle(document.documentElement).getPropertyValue("--blue").trim() || "#0b63e6";
+      }
+
+      function varRed() {
+        return getComputedStyle(document.documentElement).getPropertyValue("--red").trim() || "#e81e1e";
+      }
+
+      function drawRuler(x, topY, bottomLineY, height) {
+        const rulerTop = Math.max(184, topY - 12);
+        const rulerBottom = Math.min(height - 42, bottomLineY + 25);
+        simCtx.save();
+        simCtx.strokeStyle = "#778393";
+        simCtx.fillStyle = "#1e2937";
+        simCtx.lineWidth = 2;
+        simCtx.beginPath();
+        simCtx.moveTo(x, rulerTop);
+        simCtx.lineTo(x, rulerBottom);
+        simCtx.stroke();
+        simCtx.font = "14px sans-serif";
+        simCtx.textAlign = "right";
+        simCtx.textBaseline = "middle";
+        for (let m = 0; m <= 1.0; m += 0.1) {
+          const y = topY + m * PIXELS_PER_METER;
+          if (y < rulerTop - 1 || y > rulerBottom + 1) continue;
+          const major = Math.abs((m * 10) % 2) < 0.01;
+          simCtx.beginPath();
+          simCtx.moveTo(x, y);
+          simCtx.lineTo(x - (major ? 26 : 13), y);
+          simCtx.stroke();
+          if (major) {
+            const label = m === 0 ? "0" : m.toFixed(1);
+            simCtx.fillText(label, x - 34, y);
+          }
+        }
+        simCtx.fillText("1.0 m", x - 34, topY + PIXELS_PER_METER);
+        simCtx.restore();
+      }
+
+      function drawBlock(x, centerY, w, h, color, mass, label, isLeft, labelCenterY) {
+        const top = centerY - h / 2;
+        const left = x - w / 2;
+        const radius = 6;
+        simCtx.save();
+        simCtx.fillStyle = "rgba(0,0,0,0.14)";
+        simCtx.filter = "blur(6px)";
+        drawRoundedRect(simCtx, left + 8, top + h + 8, w, 14, 6);
+        simCtx.fill();
+        simCtx.filter = "none";
+        const blockGrad = simCtx.createLinearGradient(left, top, left + w, top + h);
+        blockGrad.addColorStop(0, "#8dc3ff");
+        blockGrad.addColorStop(0.16, color);
+        blockGrad.addColorStop(1, "#0b3f8c");
+        if (!isLeft) {
+          blockGrad.addColorStop(0, "#95dd8d");
+          blockGrad.addColorStop(0.25, color);
+          blockGrad.addColorStop(1, "#13612b");
+        }
+        simCtx.fillStyle = blockGrad;
+        simCtx.strokeStyle = isLeft ? "#074aa5" : "#13712d";
+        simCtx.lineWidth = 3;
+        drawRoundedRect(simCtx, left, top, w, h, radius);
+        simCtx.fill();
+        simCtx.stroke();
+        simCtx.fillStyle = "rgba(255,255,255,0.24)";
+        simCtx.fillRect(left + 8, top + 8, Math.max(5, w - 16), 9);
+        simCtx.fillStyle = "#6f4b27";
+        simCtx.beginPath();
+        simCtx.arc(x, top, 5, 0, Math.PI * 2);
+        simCtx.fill();
+        simCtx.strokeStyle = "rgba(255,255,255,0.9)";
+        simCtx.lineWidth = 2;
+        simCtx.beginPath();
+        simCtx.moveTo(x - 7, centerY);
+        simCtx.lineTo(x + 7, centerY);
+        simCtx.moveTo(x, centerY - 7);
+        simCtx.lineTo(x, centerY + 7);
+        simCtx.stroke();
+
+        const canvasWidth = simCtx.canvas.getBoundingClientRect().width;
+        const cardX = clamp(isLeft ? x - 194 : x + 64, 12, canvasWidth - 144);
+        const cardY = labelCenterY - h / 2 - 88;
+        drawRoundedRect(simCtx, cardX, cardY, 132, 78, 10);
+        simCtx.fillStyle = "rgba(255,255,255,0.95)";
+        simCtx.fill();
+        simCtx.strokeStyle = "#ced8e4";
+        simCtx.lineWidth = 1.5;
+        simCtx.stroke();
+        simCtx.fillStyle = "#142033";
+        simCtx.font = "800 16px sans-serif";
+        simCtx.textAlign = "center";
+        simCtx.fillText(label, cardX + 66, cardY + 25);
+        simCtx.fillStyle = isLeft ? varBlue() : "#149438";
+        simCtx.font = "900 30px sans-serif";
+        simCtx.fillText(`${mass} g`, cardX + 66, cardY + 58);
+        simCtx.restore();
+      }
+
+      function drawGraph() {
+        const { width, height } = resizeCanvas(elements.graphCanvas);
+        graphCtx.clearRect(0, 0, width, height);
+        const pad = { left: 56, right: 18, top: 36, bottom: 52 };
+        const plotW = width - pad.left - pad.right;
+        const plotH = height - pad.top - pad.bottom;
+        const maxT = GRAPH_TIME_MAX;
+        const maxV = GRAPH_SPEED_MAX;
+
+        graphCtx.fillStyle = "#fff";
+        graphCtx.fillRect(0, 0, width, height);
+        graphCtx.strokeStyle = "#d1dae6";
+        graphCtx.lineWidth = 1;
+        graphCtx.setLineDash([3, 4]);
+        for (let i = 0; i <= 5; i++) {
+          const x = pad.left + plotW * i / 5;
+          graphCtx.beginPath();
+          graphCtx.moveTo(x, pad.top);
+          graphCtx.lineTo(x, pad.top + plotH);
+          graphCtx.stroke();
+        }
+        for (let i = 0; i <= 4; i++) {
+          const y = pad.top + plotH * i / 4;
+          graphCtx.beginPath();
+          graphCtx.moveTo(pad.left, y);
+          graphCtx.lineTo(pad.left + plotW, y);
+          graphCtx.stroke();
+        }
+        graphCtx.setLineDash([]);
+
+        graphCtx.strokeStyle = "#6c7583";
+        graphCtx.lineWidth = 1.5;
+        graphCtx.beginPath();
+        graphCtx.moveTo(pad.left, pad.top);
+        graphCtx.lineTo(pad.left, pad.top + plotH);
+        graphCtx.lineTo(pad.left + plotW, pad.top + plotH);
+        graphCtx.stroke();
+
+        graphCtx.fillStyle = "#111827";
+        graphCtx.font = "15px sans-serif";
+        graphCtx.textAlign = "center";
+        graphCtx.fillText("時間 t (s)", pad.left + plotW / 2, height - 12);
+        graphCtx.save();
+        graphCtx.translate(16, pad.top + plotH / 2);
+        graphCtx.rotate(-Math.PI / 2);
+        graphCtx.fillText("速度 v (m/s)", 0, 0);
+        graphCtx.restore();
+
+        graphCtx.font = "13px sans-serif";
+        graphCtx.textAlign = "center";
+        for (let i = 0; i <= 5; i++) {
+          const t = maxT * i / 5;
+          const x = pad.left + plotW * i / 5;
+          graphCtx.fillText(t.toFixed(1), x, pad.top + plotH + 24);
+        }
+        graphCtx.textAlign = "right";
+        for (let i = 0; i <= 4; i++) {
+          const value = maxV - maxV * i / 4;
+          const y = pad.top + plotH * i / 4 + 4;
+          graphCtx.fillText(value.toFixed(1), pad.left - 8, y);
+        }
+
+        if (state.graphPoints.length > 1) {
+          graphCtx.strokeStyle = varBlue();
+          graphCtx.lineWidth = 4;
+          graphCtx.lineJoin = "round";
+          graphCtx.lineCap = "round";
+          graphCtx.beginPath();
+          const visiblePoints = state.graphPoints.filter(point => point.t <= maxT);
+          if (visiblePoints.length === 0 && state.graphPoints.length > 0) {
+            visiblePoints.push({ t: 0, v: 0 });
+          }
+          visiblePoints.forEach((point, index) => {
+            const speed = Math.min(Math.abs(point.v), maxV);
+            const x = pad.left + (point.t / maxT) * plotW;
+            const y = pad.top + ((maxV - speed) / maxV) * plotH;
+            if (index === 0) graphCtx.moveTo(x, y);
+            else graphCtx.lineTo(x, y);
+          });
+          graphCtx.stroke();
+        }
+
+        graphCtx.strokeStyle = varBlue();
+        graphCtx.lineWidth = 4;
+        graphCtx.beginPath();
+        graphCtx.moveTo(width - 76, 22);
+        graphCtx.lineTo(width - 52, 22);
+        graphCtx.stroke();
+        graphCtx.fillStyle = "#111827";
+        graphCtx.font = "italic 15px sans-serif";
+        graphCtx.textAlign = "left";
+        graphCtx.fillText("v–t", width - 42, 27);
+      }
+
+      function drawAll() {
+        drawSim();
+        drawGraph();
+      }
+
+      function bindEvents() {
+        elements.leftMassRange.addEventListener("input", event => setMass("left", event.target.value));
+        elements.rightMassRange.addEventListener("input", event => setMass("right", event.target.value));
+        elements.leftMassInput.addEventListener("change", event => setMass("left", event.target.value));
+        elements.rightMassInput.addEventListener("change", event => setMass("right", event.target.value));
+
+        elements.startButton.addEventListener("click", () => {
+          if (!state.running) {
+            state.running = true;
+            state.lastFrame = null;
+            requestAnimationFrame(step);
+          }
+        });
+
+        elements.pauseButton.addEventListener("click", () => {
+          state.running = false;
+          state.lastFrame = null;
+          updateReadouts();
+        });
+
+        elements.resetButton.addEventListener("click", resetSimulation);
+
+        [elements.showVelocity, elements.showAcceleration].forEach(input => {
+          input.addEventListener("change", drawAll);
+        });
+
+        elements.showStopwatch.addEventListener("change", () => {
+          elements.stopwatchPanel.classList.toggle("hidden", !elements.showStopwatch.checked);
+        });
+
+        elements.showSettings.addEventListener("change", () => {
+          elements.settingsPanel.style.display = elements.showSettings.checked ? "" : "none";
+        });
+
+        window.addEventListener("resize", drawAll);
+      }
+
+      bindEvents();
+      resetSimulation();
+    })();
+  </script>
+</body>
+</html>

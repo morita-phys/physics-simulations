@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>動く音源と音の波面</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #5d687b;
+      --line: #d8dee9;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --cyan: #0891b2;
+      --amber: #c27803;
+      --red: #dc2626;
+      --green: #15803d;
+      --shadow: 0 14px 35px rgba(24, 35, 55, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    .app {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 28px;
+    }
+
+    header {
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 3vw, 2.55rem);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .simulation-shell,
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .simulation-shell {
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 470px;
+      background:
+        linear-gradient(90deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px),
+        #eef6fb;
+      background-size: 48px 48px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .swatch.source {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .swatch.observer {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .controls {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .readout {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid #dce4f2;
+      border-radius: 8px;
+      background: #f8fbff;
+    }
+
+    .readout-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .readout-label {
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .readout-value {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .slider-group {
+      display: grid;
+      gap: 9px;
+    }
+
+    label {
+      font-weight: 750;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .slider-scale {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      min-height: 44px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    #toggleRun {
+      color: #ffffff;
+      background: var(--blue);
+    }
+
+    #toggleRun:hover {
+      background: var(--blue-dark);
+    }
+
+    #reset {
+      color: var(--ink);
+      background: #ffffff;
+      border-color: var(--line);
+    }
+
+    #reset:hover {
+      border-color: #aab7ca;
+      background: #f8fafc;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+      }
+
+      .readout,
+      .slider-group {
+        grid-column: span 1;
+      }
+
+      .buttons {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        width: min(100vw - 20px, 1180px);
+        padding-top: 14px;
+      }
+
+      .simulation-shell {
+        min-height: 430px;
+      }
+
+      .canvas-wrap {
+        min-height: 370px;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .readout,
+      .slider-group,
+      .buttons {
+        grid-column: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>動く音源と音の波面</h1>
+    </header>
+
+    <section class="main-grid" aria-label="ドップラー効果の波面可視化シミュレーション">
+      <div class="simulation-shell">
+        <div class="canvas-wrap">
+          <canvas id="simulation" aria-label="音源、波面、前方と後方の観測者を示すシミュレーション"></canvas>
+        </div>
+        <div class="legend" aria-hidden="true">
+          <span class="legend-item"><span class="swatch source"></span>音源</span>
+          <span class="legend-item"><span class="swatch"></span>音波の波面</span>
+          <span class="legend-item"><span class="swatch observer"></span>観測者</span>
+        </div>
+      </div>
+
+      <aside class="controls" aria-label="操作パネル">
+        <div class="readout">
+          <div class="readout-row">
+            <span class="readout-label">音源の速さ</span>
+            <span class="readout-value"><span id="speedValue">100</span> m/s</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label">音速</span>
+            <span class="readout-value"><span id="soundSpeedValue">340</span> m/s</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label">前方</span>
+            <span class="readout-value"><span id="frontCount">0</span> 個</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label">後方</span>
+            <span class="readout-value"><span id="rearCount">0</span> 個</span>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <label for="speedSlider">音源の速さ</label>
+          <input id="speedSlider" type="range" min="0" max="300" step="10" value="100">
+          <div class="slider-scale" aria-hidden="true">
+            <span>0</span>
+            <span id="sourceMidLabel">150</span>
+            <span><span id="sourceMaxLabel">300</span> m/s</span>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <label for="soundSpeedSlider">音速</label>
+          <input id="soundSpeedSlider" type="range" min="200" max="500" step="10" value="340">
+          <div class="slider-scale" aria-hidden="true">
+            <span>200</span>
+            <span>350</span>
+            <span>500 m/s</span>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="toggleRun" type="button">再生</button>
+          <button id="reset" type="button">リセット</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const canvas = document.getElementById("simulation");
+      const ctx = canvas.getContext("2d");
+      const speedSlider = document.getElementById("speedSlider");
+      const soundSpeedSlider = document.getElementById("soundSpeedSlider");
+      const speedValue = document.getElementById("speedValue");
+      const soundSpeedValue = document.getElementById("soundSpeedValue");
+      const sourceMidLabel = document.getElementById("sourceMidLabel");
+      const sourceMaxLabel = document.getElementById("sourceMaxLabel");
+      const frontCountValue = document.getElementById("frontCount");
+      const rearCountValue = document.getElementById("rearCount");
+      const toggleRun = document.getElementById("toggleRun");
+      const resetButton = document.getElementById("reset");
+
+      const INITIAL_SOUND_SPEED = 340;
+      const INITIAL_SOURCE_SPEED = 100;
+      const EMIT_INTERVAL = 0.55;
+      const MAX_WAVE_AGE = 6.5;
+      const PX_PER_METER = 0.5;
+      const SOURCE_LOOP_MARGIN = 130;
+
+      const state = {
+        running: false,
+        time: 0,
+        lastFrame: 0,
+        sourceSpeed: INITIAL_SOURCE_SPEED,
+        soundSpeed: INITIAL_SOUND_SPEED,
+        sourceX: 0,
+        sourceY: 0,
+        initialSourceX: 0,
+        waves: [],
+        emitAccumulator: 0,
+        frontCount: 0,
+        rearCount: 0
+      };
+
+      function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const ratio = Math.max(1, window.devicePixelRatio || 1);
+        canvas.width = Math.round(rect.width * ratio);
+        canvas.height = Math.round(rect.height * ratio);
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+        state.sourceY = rect.height * 0.52;
+        if (state.sourceX === 0 || !Number.isFinite(state.sourceX)) {
+          state.initialSourceX = rect.width * 0.26;
+          state.sourceX = state.initialSourceX;
+        }
+        draw();
+      }
+
+      function updateReadouts() {
+        speedValue.textContent = String(state.sourceSpeed);
+        soundSpeedValue.textContent = String(state.soundSpeed);
+        frontCountValue.textContent = String(state.frontCount);
+        rearCountValue.textContent = String(state.rearCount);
+      }
+
+      function updateSourceSpeedLimit() {
+        const maxSourceSpeed = Math.max(0, state.soundSpeed - 10);
+        speedSlider.max = String(maxSourceSpeed);
+        sourceMaxLabel.textContent = String(maxSourceSpeed);
+        sourceMidLabel.textContent = String(Math.round(maxSourceSpeed / 20) * 10);
+        if (state.sourceSpeed > maxSourceSpeed) {
+          state.sourceSpeed = maxSourceSpeed;
+          speedSlider.value = String(maxSourceSpeed);
+        }
+        updateReadouts();
+      }
+
+      function getObservers() {
+        const width = canvas.clientWidth;
+        return {
+          rear: { x: Math.max(78, width * 0.14), y: state.sourceY },
+          front: { x: Math.min(width - 78, width * 0.86), y: state.sourceY }
+        };
+      }
+
+      function resetSimulation() {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        state.running = false;
+        state.time = 0;
+        state.lastFrame = 0;
+        state.sourceSpeed = INITIAL_SOURCE_SPEED;
+        state.soundSpeed = INITIAL_SOUND_SPEED;
+        state.initialSourceX = width * 0.26;
+        state.sourceX = state.initialSourceX;
+        state.sourceY = height * 0.52;
+        state.waves = [];
+        state.emitAccumulator = 0;
+        state.frontCount = 0;
+        state.rearCount = 0;
+        speedSlider.value = String(INITIAL_SOURCE_SPEED);
+        soundSpeedSlider.value = String(INITIAL_SOUND_SPEED);
+        toggleRun.textContent = "再生";
+        updateSourceSpeedLimit();
+        updateReadouts();
+        emitWave();
+        draw();
+      }
+
+      function emitWave() {
+        state.waves.push({
+          x: state.sourceX,
+          y: state.sourceY,
+          born: state.time,
+          reachedFront: false,
+          reachedRear: false
+        });
+      }
+
+      function countArrivals() {
+        const observers = getObservers();
+        for (const wave of state.waves) {
+          const age = state.time - wave.born;
+          const radius = age * state.soundSpeed * PX_PER_METER;
+          const frontDistance = Math.hypot(observers.front.x - wave.x, observers.front.y - wave.y);
+          const rearDistance = Math.hypot(observers.rear.x - wave.x, observers.rear.y - wave.y);
+
+          if (!wave.reachedFront && radius >= frontDistance) {
+            wave.reachedFront = true;
+            state.frontCount += 1;
+          }
+          if (!wave.reachedRear && radius >= rearDistance) {
+            wave.reachedRear = true;
+            state.rearCount += 1;
+          }
+        }
+        updateReadouts();
+      }
+
+      function step(deltaSeconds) {
+        const width = canvas.clientWidth;
+        state.time += deltaSeconds;
+        state.emitAccumulator += deltaSeconds;
+
+        state.sourceX += state.sourceSpeed * PX_PER_METER * deltaSeconds;
+        if (state.sourceX > width + SOURCE_LOOP_MARGIN) {
+          state.sourceX = -SOURCE_LOOP_MARGIN;
+        }
+
+        while (state.emitAccumulator >= EMIT_INTERVAL) {
+          state.emitAccumulator -= EMIT_INTERVAL;
+          emitWave();
+        }
+
+        countArrivals();
+        state.waves = state.waves.filter(wave => state.time - wave.born <= MAX_WAVE_AGE);
+      }
+
+      function drawRoundedLabel(text, x, y, options = {}) {
+        const paddingX = 9;
+        const paddingY = 5;
+        ctx.save();
+        ctx.font = options.font || "700 14px system-ui, sans-serif";
+        const width = ctx.measureText(text).width + paddingX * 2;
+        const height = 26;
+        const radius = 7;
+        const left = x - width / 2;
+        const top = y - height / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(left + radius, top);
+        ctx.arcTo(left + width, top, left + width, top + height, radius);
+        ctx.arcTo(left + width, top + height, left, top + height, radius);
+        ctx.arcTo(left, top + height, left, top, radius);
+        ctx.arcTo(left, top, left + width, top, radius);
+        ctx.closePath();
+        ctx.fillStyle = options.fill || "rgba(255, 255, 255, 0.88)";
+        ctx.strokeStyle = options.stroke || "rgba(112, 126, 150, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = options.color || "#172033";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, x, y + 0.5);
+        ctx.restore();
+      }
+
+      function drawObserver(x, y, label) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.strokeStyle = "#15803d";
+        ctx.fillStyle = "rgba(240, 253, 244, 0.96)";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#15803d";
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#15803d";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -24);
+        ctx.lineTo(0, 24);
+        ctx.stroke();
+
+        ctx.restore();
+        drawRoundedLabel(label, x, y + 40, {
+          fill: "rgba(240, 253, 244, 0.96)",
+          stroke: "rgba(21, 128, 61, 0.35)",
+          color: "#14532d"
+        });
+      }
+
+      function drawSource(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.fillStyle = "#dc2626";
+        ctx.strokeStyle = "#991b1b";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(-4, -8);
+        ctx.lineTo(8, 0);
+        ctx.lineTo(-4, 8);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = "#dc2626";
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(30, 0);
+        ctx.lineTo(74, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(74, 0);
+        ctx.lineTo(62, -9);
+        ctx.moveTo(74, 0);
+        ctx.lineTo(62, 9);
+        ctx.stroke();
+
+        ctx.restore();
+
+        drawRoundedLabel("音源", x, y - 34, {
+          fill: "rgba(254, 242, 242, 0.96)",
+          stroke: "rgba(220, 38, 38, 0.35)",
+          color: "#991b1b"
+        });
+      }
+
+      function drawWaves() {
+        ctx.save();
+        for (const wave of state.waves) {
+          const age = state.time - wave.born;
+          const radius = age * state.soundSpeed * PX_PER_METER;
+          const alpha = Math.max(0, 1 - age / MAX_WAVE_AGE);
+          ctx.beginPath();
+          ctx.arc(wave.x, wave.y, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(37, 99, 235, ${0.18 + alpha * 0.48})`;
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawSceneGuides(width, height, frontObserverX, rearObserverX, observerY) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(93, 104, 123, 0.28)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([7, 7]);
+        ctx.beginPath();
+        ctx.moveTo(0, state.sourceY);
+        ctx.lineTo(width, state.sourceY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "rgba(23, 32, 51, 0.68)";
+        ctx.font = "700 13px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("後方", Math.max(44, rearObserverX), 32);
+        ctx.fillText("前方", Math.min(width - 44, frontObserverX), 32);
+
+        ctx.strokeStyle = "rgba(8, 145, 178, 0.55)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 5]);
+        for (const x of [rearObserverX, frontObserverX]) {
+          ctx.beginPath();
+          ctx.moveTo(x, observerY - 76);
+          ctx.lineTo(x, height - 22);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function draw() {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        ctx.clearRect(0, 0, width, height);
+
+        const observers = getObservers();
+        const observerY = state.sourceY;
+        const rearObserverX = observers.rear.x;
+        const frontObserverX = observers.front.x;
+
+        drawSceneGuides(width, height, frontObserverX, rearObserverX, observerY);
+        drawWaves();
+        drawObserver(rearObserverX, observerY, "後方の観測者");
+        drawObserver(frontObserverX, observerY, "前方の観測者");
+        drawSource(state.sourceX, state.sourceY);
+      }
+
+      function frame(timestamp) {
+        if (!state.lastFrame) {
+          state.lastFrame = timestamp;
+        }
+        const deltaSeconds = Math.min(0.05, (timestamp - state.lastFrame) / 1000);
+        state.lastFrame = timestamp;
+
+        if (state.running) {
+          step(deltaSeconds);
+        }
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      speedSlider.addEventListener("input", () => {
+        state.sourceSpeed = Number(speedSlider.value);
+        updateSourceSpeedLimit();
+      });
+
+      soundSpeedSlider.addEventListener("input", () => {
+        state.soundSpeed = Number(soundSpeedSlider.value);
+        updateSourceSpeedLimit();
+      });
+
+      toggleRun.addEventListener("click", () => {
+        state.running = !state.running;
+        state.lastFrame = 0;
+        toggleRun.textContent = state.running ? "一時停止" : "再生";
+      });
+
+      resetButton.addEventListener("click", resetSimulation);
+      window.addEventListener("resize", resizeCanvas);
+
+      resizeCanvas();
+      resetSimulation();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

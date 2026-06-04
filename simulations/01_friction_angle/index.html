@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>摩擦角シミュレーション</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #5d6b78;
+      --line: #d8e0e8;
+      --panel: #ffffff;
+      --bg: #f6f8fb;
+      --accent: #1f7a8c;
+      --accent-soft: #d9f0f3;
+      --danger: #c43b3b;
+      --safe: #237a4b;
+      --wood: #c28f58;
+      --slope: #6b7785;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.65;
+    }
+
+    header {
+      padding: 28px 20px 18px;
+      background: #eef5f7;
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .inner,
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.7rem, 4vw, 2.6rem);
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      max-width: 820px;
+    }
+
+    main {
+      padding: 22px 20px 36px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(300px, 380px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .simulation {
+      min-height: 430px;
+    }
+
+    .scene {
+      position: relative;
+      height: 310px;
+      margin-top: 6px;
+      border-radius: 6px;
+      background:
+        linear-gradient(#e7f3fb 0 55%, #edf4ea 55% 100%);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .slope-stage {
+      position: absolute;
+      left: 15%;
+      bottom: 58px;
+      width: 70%;
+      height: 16px;
+      transform-origin: left center;
+      transform: rotate(calc(-1deg * var(--theta)));
+    }
+
+    .slope-line {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--slope);
+      box-shadow: 0 12px 0 rgba(107, 119, 133, 0.18);
+    }
+
+    .block {
+      position: absolute;
+      left: 54%;
+      bottom: 14px;
+      width: 68px;
+      height: 48px;
+      transform: translateX(-50%);
+      border-radius: 6px;
+      background: var(--wood);
+      border: 2px solid #8f6337;
+      box-shadow: 0 6px 0 rgba(66, 44, 24, 0.18);
+    }
+
+    .block.sliding {
+      left: 66%;
+      background: #d77a61;
+    }
+
+    .angle-arc {
+      position: absolute;
+      left: 15%;
+      bottom: 45px;
+      width: 96px;
+      height: 52px;
+      border-top: 3px solid var(--accent);
+      border-radius: 96px 96px 0 0;
+      transform-origin: left bottom;
+      transform: skewX(calc(-1deg * var(--half-theta)));
+    }
+
+    .theta-label {
+      position: absolute;
+      left: 88px;
+      bottom: 64px;
+      color: var(--accent);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .force-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .value-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fbfcfd;
+      min-height: 78px;
+    }
+
+    .value-card strong {
+      display: block;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .value-card span {
+      display: block;
+      margin-top: 5px;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: grid;
+      gap: 16px;
+    }
+
+    .control-row label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 700;
+    }
+
+    .control-row output {
+      color: var(--accent);
+      min-width: 74px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin-top: 8px;
+      accent-color: var(--accent);
+    }
+
+    .status {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 2px solid;
+      font-size: 1.35rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .status.safe {
+      color: var(--safe);
+      background: #e7f6ee;
+      border-color: #9bd0b5;
+    }
+
+    .status.danger {
+      color: var(--danger);
+      background: #fdeceb;
+      border-color: #efaaa6;
+    }
+
+    .formula {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: #164a55;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .explanation {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .explanation h2 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+    }
+
+    .explanation p {
+      margin: 0;
+    }
+
+    @media (max-width: 820px) {
+      .workspace,
+      .explanation {
+        grid-template-columns: 1fr;
+      }
+
+      .scene {
+        height: 260px;
+      }
+
+      .force-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="inner">
+      <h1>摩擦角シミュレーション</h1>
+      <p class="lead">斜面の角度 θ、静止摩擦係数 μ、質量 m を変えて、物体が滑り出す条件を確かめます。判定は <strong>tanθ &gt; μ なら滑る</strong>、<strong>tanθ ≦ μ なら滑らない</strong> です。</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="workspace">
+      <section class="panel simulation" aria-label="斜面のシミュレーション">
+        <div class="scene" id="scene">
+          <div class="slope-stage" id="slopeStage">
+            <div class="slope-line"></div>
+            <div class="block" id="block" aria-label="斜面上の物体"></div>
+          </div>
+          <div class="angle-arc"></div>
+          <div class="theta-label">θ = <span id="thetaInScene">25</span>°</div>
+        </div>
+
+        <div class="status safe" id="status">滑らない</div>
+        <div class="formula" id="formula">tanθ = 0.466、μ = 0.50</div>
+
+        <div class="force-list" aria-label="力と判定値">
+          <div class="value-card">
+            <strong>斜面方向の重力 mg sinθ</strong>
+            <span id="parallelForce">0.00 N</span>
+          </div>
+          <div class="value-card">
+            <strong>垂直抗力に関係する mg cosθ</strong>
+            <span id="normalForce">0.00 N</span>
+          </div>
+          <div class="value-card">
+            <strong>最大静止摩擦力 μmg cosθ</strong>
+            <span id="maxFriction">0.00 N</span>
+          </div>
+          <div class="value-card">
+            <strong>tanθ</strong>
+            <span id="tanValue">0.000</span>
+          </div>
+          <div class="value-card">
+            <strong>μ</strong>
+            <span id="muValue">0.50</span>
+          </div>
+          <div class="value-card">
+            <strong>滑り出す角度 arctan μ</strong>
+            <span id="criticalAngle">26.6°</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel controls" aria-label="操作パネル">
+        <div class="control-row">
+          <label for="theta">
+            斜面の角度 θ
+            <output id="thetaOutput">25°</output>
+          </label>
+          <input id="theta" type="range" min="0" max="60" step="1" value="25">
+        </div>
+
+        <div class="control-row">
+          <label for="mu">
+            静止摩擦係数 μ
+            <output id="muOutput">0.50</output>
+          </label>
+          <input id="mu" type="range" min="0.05" max="1.20" step="0.01" value="0.50">
+        </div>
+
+        <div class="control-row">
+          <label for="mass">
+            質量 m
+            <output id="massOutput">2.0 kg</output>
+          </label>
+          <input id="mass" type="range" min="0.5" max="10" step="0.1" value="2.0">
+        </div>
+
+        <p class="note">質量 m を変えると、mg sinθ と μmg cosθ はどちらも同じ割合で大きくなります。そのため、滑るかどうかの境目は m ではなく θ と μ で決まります。</p>
+      </section>
+    </div>
+
+    <section class="explanation">
+      <div class="panel">
+        <h2>何を比べているか</h2>
+        <p>斜面に沿って下向きに引く力は mg sinθ です。これに対して、静止摩擦力が最大で出せる大きさは μmg cosθ です。滑り出す瞬間は、この2つがつり合う境目です。</p>
+      </div>
+      <div class="panel">
+        <h2>摩擦角の考え方</h2>
+        <p>mg sinθ &gt; μmg cosθ を整理すると tanθ &gt; μ になります。両辺に質量 m が含まれていて消えるので、質量を変えても滑り出す角度は変わりません。</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const g = 9.8;
+
+    const thetaSlider = document.getElementById("theta");
+    const muSlider = document.getElementById("mu");
+    const massSlider = document.getElementById("mass");
+    const scene = document.getElementById("scene");
+    const block = document.getElementById("block");
+    const status = document.getElementById("status");
+
+    const thetaOutput = document.getElementById("thetaOutput");
+    const muOutput = document.getElementById("muOutput");
+    const massOutput = document.getElementById("massOutput");
+    const thetaInScene = document.getElementById("thetaInScene");
+    const formula = document.getElementById("formula");
+    const parallelForce = document.getElementById("parallelForce");
+    const normalForce = document.getElementById("normalForce");
+    const maxFriction = document.getElementById("maxFriction");
+    const tanValue = document.getElementById("tanValue");
+    const muValue = document.getElementById("muValue");
+    const criticalAngle = document.getElementById("criticalAngle");
+
+    function format(value, digits) {
+      return value.toFixed(digits);
+    }
+
+    function updateSimulation() {
+      const theta = Number(thetaSlider.value);
+      const mu = Number(muSlider.value);
+      const mass = Number(massSlider.value);
+      const rad = theta * Math.PI / 180;
+      const tanTheta = Math.tan(rad);
+      const mgSin = mass * g * Math.sin(rad);
+      const mgCos = mass * g * Math.cos(rad);
+      const maxStaticFriction = mu * mgCos;
+      const critical = Math.atan(mu) * 180 / Math.PI;
+      const isSliding = tanTheta > mu;
+
+      scene.style.setProperty("--theta", theta);
+      scene.style.setProperty("--half-theta", theta / 2);
+      block.classList.toggle("sliding", isSliding);
+      status.className = `status ${isSliding ? "danger" : "safe"}`;
+      status.textContent = isSliding ? "滑る" : "滑らない";
+
+      thetaOutput.textContent = `${theta}°`;
+      muOutput.textContent = format(mu, 2);
+      massOutput.textContent = `${format(mass, 1)} kg`;
+      thetaInScene.textContent = theta;
+
+      parallelForce.textContent = `${format(mgSin, 2)} N`;
+      normalForce.textContent = `${format(mgCos, 2)} N`;
+      maxFriction.textContent = `${format(maxStaticFriction, 2)} N`;
+      tanValue.textContent = format(tanTheta, 3);
+      muValue.textContent = format(mu, 2);
+      criticalAngle.textContent = `${format(critical, 1)}°`;
+      formula.textContent = `tanθ = ${format(tanTheta, 3)}、μ = ${format(mu, 2)}：tanθ ${isSliding ? ">" : "≦"} μ`;
+    }
+
+    thetaSlider.addEventListener("input", updateSimulation);
+    muSlider.addEventListener("input", updateSimulation);
+    massSlider.addEventListener("input", updateSimulation);
+    updateSimulation();
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# 動作確認用スクリーンショット
+chrome-check-*.png
+edge-check-*.png
+
+# 公開用フォルダに入れない開発用ファイル
+*.pptx
+*.ppt
+*.docx
+*.pdf
+
+# 開発メモ
+**/prompts.md
+**/lesson_note.md
+**/validation.md
+
+# 一時ファイル
+*.log
+*.tmp

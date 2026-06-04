@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>薄い膜による反射光のモデル実験</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #1d2733;
+      --muted: #667589;
+      --line: #d7dee8;
+      --accent: #246bfe;
+      --film: rgba(97, 183, 214, 0.33);
+      --air: #edf3f8;
+      --shadow: 0 12px 30px rgba(42, 56, 76, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #fbfcff 0%, var(--bg) 100%);
+    }
+
+    .app {
+      width: min(1180px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 24px 0 28px;
+    }
+
+    header {
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(24px, 3vw, 34px);
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.82fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .visuals {
+      display: grid;
+      grid-template-columns: minmax(360px, 1.1fr) minmax(300px, 0.9fr);
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 14px 16px 10px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .figure {
+      padding: 0 16px 16px;
+    }
+
+    svg,
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    #topView {
+      aspect-ratio: 4 / 3;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eef4f9;
+    }
+
+    .model-panel {
+      grid-column: 1 / -1;
+    }
+
+    .model-panel h2 {
+      font-size: 16px;
+      padding-bottom: 6px;
+    }
+
+    .model-diagram {
+      max-height: 150px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbff;
+    }
+
+    .controls {
+      padding: 16px;
+      position: sticky;
+      top: 14px;
+    }
+
+    .control-group {
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .control-group:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .label-row,
+    .value-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    label,
+    legend {
+      font-weight: 700;
+    }
+
+    .value {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    #selectedWavelength {
+      white-space: normal;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    fieldset {
+      border: 0;
+      padding: 0;
+      margin: 0;
+    }
+
+    .segmented,
+    .color-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .mode-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mode-option span,
+    .color-button,
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    .mode-option input:checked + span,
+    .color-button.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(36, 107, 254, 0.16);
+      background: #f4f7ff;
+    }
+
+    .mode-option span:hover,
+    .color-button:hover,
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .color-button {
+      min-width: 88px;
+      gap: 7px;
+    }
+
+    .color-button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      flex: 0 0 auto;
+    }
+
+    .checkbox-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+
+    .checkbox-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+
+    .readout {
+      display: grid;
+      gap: 7px;
+      padding: 12px;
+      background: #f6f8fb;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .readout div {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .readout strong {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .reset {
+      width: 100%;
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+
+    .caption {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 10px 0 0;
+    }
+
+    @media (max-width: 1040px) {
+      main,
+      .visuals {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>薄い膜による反射光のモデル実験</h1>
+    </header>
+
+    <main>
+      <section class="visuals" aria-label="シミュレーション表示">
+        <section class="panel model-panel">
+          <h2>モデル実験の模式図</h2>
+          <div class="figure">
+            <svg class="model-diagram" viewBox="0 0 760 180" role="img" aria-label="厚みのある薄膜モデルと垂直に入る光">
+              <rect x="0" y="0" width="760" height="180" fill="#f8fbff"></rect>
+
+              <g stroke="#173a63" stroke-width="2.4" stroke-linejoin="round">
+                <path d="M 220 65 L 705 65 L 610 112 L 105 112 Z" fill="#d8f4f8"></path>
+                <path d="M 105 112 L 610 112 L 610 142 L 105 142 Z" fill="#c2eaf1"></path>
+                <path d="M 610 112 L 705 65 L 705 95 L 610 142 Z" fill="#acd7e3"></path>
+                <path d="M 220 65 L 705 65 L 705 95 L 610 142 L 105 142 L 105 112 Z" fill="none"></path>
+                <path d="M 610 112 L 610 142"></path>
+              </g>
+
+              <g stroke="#173a63" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="250" y1="22" x2="250" y2="96"></line>
+                <line x1="410" y1="22" x2="410" y2="96"></line>
+                <line x1="570" y1="22" x2="570" y2="96"></line>
+                <path d="M 242 88 L 250 104 L 258 88 Z" fill="#173a63"></path>
+                <path d="M 402 88 L 410 104 L 418 88 Z" fill="#173a63"></path>
+                <path d="M 562 88 L 570 104 L 578 88 Z" fill="#173a63"></path>
+              </g>
+              <text x="410" y="23" fill="#173a63" font-size="24" font-weight="700" text-anchor="middle">光</text>
+
+              <g stroke="#173a63" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="64" y1="112" x2="88" y2="112"></line>
+                <line x1="64" y1="142" x2="88" y2="142"></line>
+                <line x1="76" y1="112" x2="76" y2="142"></line>
+                <path d="M 69 122 L 76 112 L 83 122"></path>
+                <path d="M 69 132 L 76 142 L 83 132"></path>
+              </g>
+              <text x="44" y="134" fill="#173a63" font-size="24" font-style="italic">d</text>
+
+              <text x="358" y="136" fill="#173a63" font-size="24" font-weight="700" text-anchor="middle">薄膜</text>
+            </svg>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>薄膜の断面図</h2>
+          <div class="figure">
+            <svg id="crossSection" viewBox="0 0 560 420" role="img" aria-label="薄膜を横から見た断面図">
+              <defs>
+                <marker id="arrowStrong" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M 0 0 L 6 3 L 0 6 z" fill="#1e5cff"></path>
+                </marker>
+                <marker id="arrowSoft" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto" markerUnits="strokeWidth">
+                  <path d="M 0 0 L 8 4 L 0 8 z" fill="#8796a8"></path>
+                </marker>
+                <linearGradient id="filmGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#9ce7fb" stop-opacity="0.44"></stop>
+                  <stop offset="100%" stop-color="#62b9d9" stop-opacity="0.5"></stop>
+                </linearGradient>
+              </defs>
+
+              <rect x="0" y="0" width="560" height="420" rx="10" fill="#f8fbff"></rect>
+              <rect x="56" y="50" width="448" height="130" rx="7" fill="#edf3f8"></rect>
+              <rect x="56" y="260" width="448" height="110" rx="7" fill="#edf3f8"></rect>
+              <text x="72" y="82" fill="#667589" font-size="15" font-weight="700">空気</text>
+              <text x="72" y="346" fill="#667589" font-size="15" font-weight="700">空気</text>
+
+              <g id="filmShape"></g>
+              <g id="filmLabels"></g>
+              <g id="lightPaths"></g>
+            </svg>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>薄膜を上から見た図</h2>
+          <div class="figure">
+            <canvas id="topView" width="560" height="420" aria-label="薄膜を上から見た色の表示"></canvas>
+          </div>
+        </section>
+      </section>
+
+      <aside class="panel controls" aria-label="操作パネル">
+        <div class="control-group">
+          <div class="label-row">
+            <label for="thickness">膜の厚さ d</label>
+            <span class="value"><span id="thicknessValue">200</span> nm</span>
+          </div>
+          <input id="thickness" type="range" min="0" max="1000" step="1" value="200">
+        </div>
+
+        <fieldset class="control-group">
+          <legend>入射光</legend>
+          <div class="segmented">
+            <label class="mode-option">
+              <input type="radio" name="lightMode" value="mono" checked>
+              <span>単色光</span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="lightMode" value="white">
+              <span>白色光</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="control-group">
+          <div class="value-row">
+            <label>単色光の色</label>
+            <span class="value" id="selectedWavelength">緑 530 nm</span>
+          </div>
+          <div class="color-buttons" id="colorButtons" aria-label="単色光の色を選ぶ"></div>
+        </div>
+
+        <div class="control-group">
+          <label class="checkbox-row">
+            <input id="gradientMode" type="checkbox">
+            <span>膜厚を連続的に変化させる</span>
+          </label>
+        </div>
+
+        <div class="control-group">
+          <div class="readout" aria-label="現在の設定">
+            <div><span>膜の厚さ d</span><strong><span id="readThickness">200</span> nm</strong></div>
+            <div><span>選択中の光</span><strong id="readLight">緑 530 nm</strong></div>
+            <div><span>膜の屈折率</span><strong>n = 1.33</strong></div>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <button class="reset" id="reset" type="button">リセット</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const REFRACTIVE_INDEX = 1.33;
+    const DEFAULT_STATE = {
+      thickness: 200,
+      mode: "mono",
+      colorKey: "green",
+      gradient: false
+    };
+
+    const COLORS = [
+      { key: "violet", label: "紫", wavelength: 400, rgb: [118, 78, 255] },
+      { key: "blue", label: "青", wavelength: 450, rgb: [48, 132, 255] },
+      { key: "green", label: "緑", wavelength: 530, rgb: [42, 196, 96] },
+      { key: "yellow", label: "黄", wavelength: 580, rgb: [246, 210, 53] },
+      { key: "red", label: "赤", wavelength: 650, rgb: [242, 76, 72] }
+    ];
+
+    const state = { ...DEFAULT_STATE };
+    const nodes = {
+      thickness: document.getElementById("thickness"),
+      thicknessValue: document.getElementById("thicknessValue"),
+      readThickness: document.getElementById("readThickness"),
+      selectedWavelength: document.getElementById("selectedWavelength"),
+      readLight: document.getElementById("readLight"),
+      colorButtons: document.getElementById("colorButtons"),
+      gradientMode: document.getElementById("gradientMode"),
+      reset: document.getElementById("reset"),
+      crossSection: document.getElementById("crossSection"),
+      filmShape: document.getElementById("filmShape"),
+      filmLabels: document.getElementById("filmLabels"),
+      lightPaths: document.getElementById("lightPaths"),
+      topView: document.getElementById("topView")
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function selectedColor() {
+      return COLORS.find((color) => color.key === state.colorKey) || COLORS[2];
+    }
+
+    function reflectedIntensity(thicknessNm, wavelengthNm) {
+      const delta = (4 * Math.PI * REFRACTIVE_INDEX * thicknessNm) / wavelengthNm + Math.PI;
+      return (1 + Math.cos(delta)) / 2;
+    }
+
+    function monoDisplayColor(thicknessNm, color) {
+      const intensity = reflectedIntensity(thicknessNm, color.wavelength);
+      const base = color.rgb;
+      const glow = Math.pow(intensity, 1.15);
+      return base.map((channel) => clamp(Math.round(channel * glow), 0, 255));
+    }
+
+    function whiteDisplayColor(thicknessNm) {
+      const red = reflectedIntensity(thicknessNm, 650);
+      const green = reflectedIntensity(thicknessNm, 530);
+      const blue = reflectedIntensity(thicknessNm, 450);
+      return [
+        Math.round(18 + 237 * red),
+        Math.round(18 + 237 * green),
+        Math.round(18 + 237 * blue)
+      ];
+    }
+
+    function displayColor(thicknessNm) {
+      if (state.mode === "white") {
+        return whiteDisplayColor(thicknessNm);
+      }
+      return monoDisplayColor(thicknessNm, selectedColor());
+    }
+
+    function rgbString(rgb) {
+      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    }
+
+    function pathD(points) {
+      return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point[0]} ${point[1]}`).join(" ");
+    }
+
+    function drawTopView() {
+      const canvas = nodes.topView;
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      const filmX = 58;
+      const filmY = 56;
+      const filmW = w - filmX * 2;
+      const filmH = h - filmY * 2;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#eef4f9";
+      ctx.fillRect(0, 0, w, h);
+
+      if (state.gradient) {
+        for (let x = 0; x <= filmW; x += 1) {
+          const ratio = x / filmW;
+          const localThickness = clamp(state.thickness - 300 + 600 * ratio, 0, 1000);
+          ctx.fillStyle = rgbString(displayColor(localThickness));
+          ctx.fillRect(filmX + x, filmY, 1.5, filmH);
+        }
+      } else {
+        ctx.fillStyle = rgbString(displayColor(state.thickness));
+        ctx.fillRect(filmX, filmY, filmW, filmH);
+      }
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(55, 74, 96, 0.55)";
+      ctx.strokeRect(filmX, filmY, filmW, filmH);
+
+      ctx.fillStyle = "#b45309";
+      ctx.font = "800 20px 'Yu Gothic', Meiryo, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("奥", filmX + filmW / 2, filmY - 22);
+      ctx.fillText("手前", filmX + filmW / 2, filmY + filmH + 24);
+      ctx.fillText("左", filmX - 24, filmY + filmH / 2);
+      ctx.fillText("右", filmX + filmW + 24, filmY + filmH / 2);
+    }
+
+    function drawCrossSection() {
+      const maxFilmHeight = 120;
+      const heightForThickness = (thicknessNm) => {
+        return (clamp(thicknessNm, 0, 1000) / 1000) * maxFilmHeight;
+      };
+      const filmHeight = heightForThickness(state.thickness);
+      const centerY = 214;
+      const leftX = 80;
+      const rightX = 480;
+      const uniformTopY = centerY - filmHeight / 2;
+      const uniformBottomY = centerY + filmHeight / 2;
+      const wedgeBottomLeft = 232;
+      const wedgeBottomRight = 288;
+      const topY = state.gradient ? wedgeBottomLeft - filmHeight : uniformTopY;
+      const bottomY = uniformBottomY;
+      const topLeft = topY;
+      const topRight = topY;
+      const bottomLeft = state.gradient ? wedgeBottomLeft : bottomY;
+      const bottomRight = state.gradient ? wedgeBottomRight : bottomY;
+      const filmPath = state.gradient
+        ? pathD([[leftX, topLeft], [rightX, topRight], [rightX, bottomRight], [leftX, bottomLeft], [leftX, topLeft]])
+        : `M ${leftX} ${topY} H ${rightX} V ${bottomY} H ${leftX} Z`;
+
+      nodes.filmShape.innerHTML = `
+        <path d="${filmPath}" fill="url(#filmGradient)" stroke="#4ca8c5" stroke-width="2"></path>
+        <path d="M ${leftX} ${topLeft} L ${rightX} ${topRight}" stroke="#318fae" stroke-width="2.2"></path>
+        <path d="M ${leftX} ${bottomLeft} L ${rightX} ${bottomRight}" stroke="#318fae" stroke-width="2.2"></path>
+      `;
+
+      nodes.filmLabels.innerHTML = `
+        <text x="${rightX - 90}" y="${(topLeft + bottomRight) / 2 + 5}" fill="#2b7890" font-size="15" font-weight="700">石けん水膜</text>
+        <text x="${leftX - 24}" y="${bottomLeft + 30}" fill="#b45309" font-size="18" font-weight="800">左</text>
+        <text x="${rightX + 8}" y="${bottomRight + 30}" fill="#b45309" font-size="18" font-weight="800">右</text>
+      `;
+
+      const surfaceY = topY;
+      const bottomAt = (x) => {
+        const ratio = clamp((x - leftX) / (rightX - leftX), 0, 1);
+        return bottomLeft + (bottomRight - bottomLeft) * ratio;
+      };
+      const incidentTop = 70;
+      const reflectedTop = 72;
+      const rayStroke = state.mode === "mono" ? "#1e5cff" : "#ffffff";
+      const outlinePath = state.mode === "white"
+        ? (d, width) => `<path d="${d}" fill="none" stroke="#7f8da0" stroke-width="${width + 3}" stroke-opacity="0.58" stroke-linecap="round" stroke-linejoin="round"></path>`
+        : () => "";
+      const rayPath = (d, color, width) => `
+        ${outlinePath(d, width)}
+        <path d="${d}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowStrong)"></path>
+      `;
+      const surfacePath = `M 154 ${incidentTop} L 154 ${surfaceY - 9} Q 154 ${surfaceY} 166 ${surfaceY} Q 178 ${surfaceY} 178 ${surfaceY - 9} L 178 ${reflectedTop}`;
+      const backLeftY = bottomAt(238);
+      const backRightY = bottomAt(264);
+      const backTouchX = 251;
+      const backTouchY = bottomAt(backTouchX);
+      const backPath = `M 238 ${incidentTop} L 238 ${backLeftY - 12} Q 238 ${backTouchY} ${backTouchX} ${backTouchY} Q 264 ${backTouchY} 264 ${backRightY - 12} L 264 ${reflectedTop}`;
+
+      nodes.lightPaths.innerHTML = `
+        ${rayPath(surfacePath, rayStroke, 5.5)}
+        ${rayPath(backPath, rayStroke, 5.5)}
+      `;
+    }
+
+    function updateControls() {
+      nodes.thickness.value = state.thickness;
+      nodes.thicknessValue.textContent = state.thickness;
+      nodes.readThickness.textContent = state.thickness;
+      nodes.gradientMode.checked = state.gradient;
+      document.querySelectorAll('input[name="lightMode"]').forEach((radio) => {
+        radio.checked = radio.value === state.mode;
+      });
+
+      const color = selectedColor();
+      const monoText = `${color.label} ${color.wavelength} nm`;
+      nodes.selectedWavelength.textContent = state.mode === "white"
+        ? "白色光モードでは単色光の色選択は使いません"
+        : monoText;
+      nodes.readLight.textContent = state.mode === "white" ? "白色光" : monoText;
+      nodes.colorButtons.querySelectorAll("button").forEach((button) => {
+        const active = button.dataset.key === state.colorKey;
+        button.classList.toggle("active", active);
+        button.disabled = state.mode === "white";
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
+
+    function render() {
+      updateControls();
+      drawCrossSection();
+      drawTopView();
+    }
+
+    function buildColorButtons() {
+      COLORS.forEach((color) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "color-button";
+        button.dataset.key = color.key;
+        button.innerHTML = `<span class="swatch" style="background: rgb(${color.rgb.join(",")})"></span>${color.label} ${color.wavelength} nm`;
+        button.addEventListener("click", () => {
+          if (state.mode !== "mono") return;
+          state.colorKey = color.key;
+          render();
+        });
+        nodes.colorButtons.appendChild(button);
+      });
+    }
+
+    nodes.thickness.addEventListener("input", (event) => {
+      state.thickness = Number(event.target.value);
+      render();
+    });
+
+    document.querySelectorAll('input[name="lightMode"]').forEach((radio) => {
+      radio.addEventListener("change", (event) => {
+        state.mode = event.target.value;
+        render();
+      });
+    });
+
+    nodes.gradientMode.addEventListener("change", (event) => {
+      state.gradient = event.target.checked;
+      render();
+    });
+
+    nodes.reset.addEventListener("click", () => {
+      Object.assign(state, DEFAULT_STATE);
+      render();
+    });
+
+    buildColorButtons();
+    render();
+  </script>
+</body>
+</html>
