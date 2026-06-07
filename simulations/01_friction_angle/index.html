@@ -3,426 +3,788 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>摩擦角シミュレーション</title>
+  <title>斜面上の物体はいつ動き出すか</title>
   <style>
     :root {
-      --ink: #1f2933;
-      --muted: #5d6b78;
-      --line: #d8e0e8;
+      --ink: #12213a;
+      --muted: #687385;
+      --line: #d9e0e8;
+      --bg: #f7f9fc;
       --panel: #ffffff;
-      --bg: #f6f8fb;
-      --accent: #1f7a8c;
-      --accent-soft: #d9f0f3;
-      --danger: #c43b3b;
-      --safe: #237a4b;
-      --wood: #c28f58;
-      --slope: #6b7785;
+      --board: #f6f6f3;
+      --block: #d8dde4;
+      --accent: #1769d1;
+      --green: #138b39;
+      --green-dark: #0d6e2c;
+      --force: #df2020;
+      --normal: #1b62c5;
     }
 
     * {
       box-sizing: border-box;
     }
 
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
     body {
       margin: 0;
+      overflow: hidden;
       font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, Arial, sans-serif;
       color: var(--ink);
       background: var(--bg);
-      line-height: 1.65;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      padding: 16px 20px 18px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
     }
 
     header {
-      padding: 28px 20px 18px;
-      background: #eef5f7;
-      border-bottom: 1px solid var(--line);
-    }
-
-    header .inner,
-    main {
-      max-width: 1080px;
-      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 70px;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.7rem, 4vw, 2.6rem);
+      margin: 0;
+      width: min(760px, 100%);
+      padding: 8px 20px;
+      border: 1px solid #cbd4df;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.86);
+      text-align: center;
+      font-size: clamp(1.8rem, 3.1vw, 2.7rem);
+      line-height: 1.25;
       letter-spacing: 0;
     }
 
-    .lead {
-      margin: 0;
-      color: var(--muted);
-      max-width: 820px;
-    }
-
     main {
-      padding: 22px 20px 36px;
-    }
-
-    .workspace {
+      min-height: 0;
       display: grid;
-      grid-template-columns: minmax(280px, 1fr) minmax(300px, 380px);
-      gap: 18px;
-      align-items: start;
+      grid-template-columns: minmax(620px, 1fr) minmax(300px, 390px);
+      gap: 14px;
     }
 
-    .panel {
-      background: var(--panel);
+    .simulation,
+    .controls {
+      min-height: 0;
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 18px;
+      background: var(--panel);
     }
 
     .simulation {
-      min-height: 430px;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 12px;
+      padding: 18px 20px 16px;
     }
 
-    .scene {
+    .scene-wrap {
+      min-height: 0;
       position: relative;
-      height: 310px;
-      margin-top: 6px;
       border-radius: 6px;
-      background:
-        linear-gradient(#e7f3fb 0 55%, #edf4ea 55% 100%);
-      border: 1px solid var(--line);
+      background: #ffffff;
       overflow: hidden;
     }
 
-    .slope-stage {
-      position: absolute;
-      left: 15%;
-      bottom: 58px;
-      width: 70%;
-      height: 16px;
-      transform-origin: left center;
-      transform: rotate(calc(-1deg * var(--theta)));
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
     }
 
-    .slope-line {
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
-      background: var(--slope);
-      box-shadow: 0 12px 0 rgba(107, 119, 133, 0.18);
+    .floor {
+      stroke: #111827;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .board {
+      fill: var(--board);
+      stroke: #111827;
+      stroke-width: 3;
     }
 
     .block {
-      position: absolute;
-      left: 54%;
-      bottom: 14px;
-      width: 68px;
-      height: 48px;
-      transform: translateX(-50%);
-      border-radius: 6px;
-      background: var(--wood);
-      border: 2px solid #8f6337;
-      box-shadow: 0 6px 0 rgba(66, 44, 24, 0.18);
-    }
-
-    .block.sliding {
-      left: 66%;
-      background: #d77a61;
+      fill: var(--block);
+      stroke: #111827;
+      stroke-width: 3;
     }
 
     .angle-arc {
-      position: absolute;
-      left: 15%;
-      bottom: 45px;
-      width: 96px;
-      height: 52px;
-      border-top: 3px solid var(--accent);
-      border-radius: 96px 96px 0 0;
-      transform-origin: left bottom;
-      transform: skewX(calc(-1deg * var(--half-theta)));
+      fill: none;
+      stroke: #111827;
+      stroke-width: 3;
     }
 
     .theta-label {
-      position: absolute;
-      left: 88px;
-      bottom: 64px;
-      color: var(--accent);
-      font-weight: 700;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 2px 8px;
-      border-radius: 4px;
+      fill: #111827;
+      font-size: 32px;
+      font-family: Georgia, "Times New Roman", serif;
     }
 
-    .force-list {
+    .force-layer {
+      opacity: 0;
+      transition: opacity 0.18s ease;
+      pointer-events: none;
+    }
+
+    .force-layer.visible {
+      opacity: 1;
+    }
+
+    .force-main {
+      stroke: var(--force);
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+    }
+
+    .force-normal {
+      stroke: var(--normal);
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+    }
+
+    .force-guide {
+      stroke: var(--force);
+      stroke-width: 2;
+      stroke-dasharray: 8 7;
+      fill: none;
+      opacity: 0.72;
+      stroke-linecap: round;
+    }
+
+    .force-label {
+      fill: var(--force);
+      font-size: 25px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+    }
+
+    .force-label.normal {
+      fill: var(--normal);
+    }
+
+    .readouts {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 16px;
+      grid-template-columns: 1fr 1fr;
+      min-height: 98px;
     }
 
-    .value-card {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px 12px;
-      background: #fbfcfd;
-      min-height: 78px;
+    .readout {
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 8px;
+      padding: 6px 10px;
     }
 
-    .value-card strong {
-      display: block;
-      font-size: 0.92rem;
-      color: var(--muted);
+    .readout + .readout {
+      border-left: 1px solid var(--line);
     }
 
-    .value-card span {
-      display: block;
-      margin-top: 5px;
-      font-size: 1.25rem;
+    .readout-label {
+      font-size: 1.02rem;
       font-weight: 700;
+      color: #1d2740;
+    }
+
+    .readout-value {
+      font-size: clamp(1.85rem, 3vw, 2.55rem);
+      line-height: 1;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
     }
 
     .controls {
+      padding: 18px 20px;
       display: grid;
-      gap: 16px;
+      align-content: start;
+      gap: 14px;
+      overflow: auto;
     }
 
-    .control-row label {
+    .control {
+      display: grid;
+      gap: 8px;
+    }
+
+    .control-head {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       gap: 12px;
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 1.05rem;
     }
 
-    .control-row output {
-      color: var(--accent);
-      min-width: 74px;
+    .value-box {
+      min-width: 96px;
+      padding: 5px 10px;
+      border: 1px solid #d3dce6;
+      border-radius: 6px;
+      background: #fbfcfe;
       text-align: right;
+      font-size: 1.45rem;
+      font-weight: 500;
+      color: #0f172a;
+      font-variant-numeric: tabular-nums;
     }
 
     input[type="range"] {
       width: 100%;
-      margin-top: 8px;
       accent-color: var(--accent);
     }
 
-    .status {
-      margin-top: 18px;
-      padding: 14px;
-      border-radius: 8px;
-      border: 2px solid;
-      font-size: 1.35rem;
-      font-weight: 800;
-      text-align: center;
+    .scale {
+      display: flex;
+      justify-content: space-between;
+      color: #1f2937;
+      font-size: 0.95rem;
+      font-variant-numeric: tabular-nums;
     }
 
-    .status.safe {
-      color: var(--safe);
-      background: #e7f6ee;
-      border-color: #9bd0b5;
-    }
-
-    .status.danger {
-      color: var(--danger);
-      background: #fdeceb;
-      border-color: #efaaa6;
-    }
-
-    .formula {
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: 8px;
-      background: var(--accent-soft);
-      color: #164a55;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    .note {
-      margin-top: 14px;
-      color: var(--muted);
-      font-size: 0.96rem;
-    }
-
-    .explanation {
-      margin-top: 18px;
+    .button-row {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
 
-    .explanation h2 {
-      margin: 0 0 8px;
-      font-size: 1.15rem;
+    .action {
+      width: 100%;
+      min-height: 54px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 1.08rem;
+      cursor: pointer;
     }
 
-    .explanation p {
-      margin: 0;
+    .action.primary {
+      color: #ffffff;
+      background: linear-gradient(180deg, #22a347, var(--green));
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.14);
     }
 
-    @media (max-width: 820px) {
-      .workspace,
-      .explanation {
+    .action.primary:disabled {
+      cursor: default;
+      opacity: 0.62;
+    }
+
+    .action.secondary {
+      color: #1d2737;
+      background: #ffffff;
+      border-color: #ccd6e0;
+    }
+
+    .action.secondary.active {
+      color: #ffffff;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .reset {
+      min-height: 54px;
+      color: #1d2737;
+      background: #ffffff;
+      border: 2px solid #1d2737;
+    }
+
+    .manual {
+      padding-top: 6px;
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      main {
         grid-template-columns: 1fr;
       }
 
-      .scene {
-        height: 260px;
-      }
-
-      .force-list {
-        grid-template-columns: 1fr;
+      svg {
+        min-height: 330px;
       }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="inner">
-      <h1>摩擦角シミュレーション</h1>
-      <p class="lead">斜面の角度 θ、静止摩擦係数 μ、質量 m を変えて、物体が滑り出す条件を確かめます。判定は <strong>tanθ &gt; μ なら滑る</strong>、<strong>tanθ ≦ μ なら滑らない</strong> です。</p>
-    </div>
-  </header>
+  <div class="app">
+    <header>
+      <h1>斜面上の物体はいつ動き出すか</h1>
+    </header>
 
-  <main>
-    <div class="workspace">
-      <section class="panel simulation" aria-label="斜面のシミュレーション">
-        <div class="scene" id="scene">
-          <div class="slope-stage" id="slopeStage">
-            <div class="slope-line"></div>
-            <div class="block" id="block" aria-label="斜面上の物体"></div>
-          </div>
-          <div class="angle-arc"></div>
-          <div class="theta-label">θ = <span id="thetaInScene">25</span>°</div>
+    <main>
+      <section class="simulation" aria-label="斜面上の物体の表示">
+        <div class="scene-wrap">
+          <svg id="scene" viewBox="0 0 760 460" role="img" aria-label="横から見た板と物体">
+            <defs>
+              <marker id="arrow-red" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#df2020"></path>
+              </marker>
+              <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#1b62c5"></path>
+              </marker>
+            </defs>
+
+            <line class="floor" x1="28" y1="416" x2="732" y2="416"></line>
+            <path class="angle-arc" id="angleArc" d=""></path>
+            <text class="theta-label" id="thetaSymbol" x="0" y="0">θ</text>
+
+            <g id="slopeGroup">
+              <rect class="board" x="0" y="-9" width="460" height="18" rx="1"></rect>
+              <g id="blockGroup">
+                <rect class="block" id="blockShape" x="-31" y="-59" width="62" height="50" rx="1"></rect>
+              </g>
+            </g>
+
+            <g class="force-layer" id="forceLayer" aria-hidden="true">
+              <line class="force-main" id="mgArrow" marker-end="url(#arrow-red)"></line>
+              <line class="force-normal" id="normalArrow" marker-end="url(#arrow-blue)"></line>
+              <line class="force-main" id="frictionArrow" marker-end="url(#arrow-red)"></line>
+              <line class="force-guide" id="parallelGuide" marker-end="url(#arrow-red)"></line>
+              <line class="force-guide" id="normalGuide" marker-end="url(#arrow-red)"></line>
+              <text class="force-label" id="mgLabel">mg</text>
+              <text class="force-label normal" id="normalLabel">N</text>
+              <text class="force-label" id="frictionLabel">f</text>
+              <text class="force-label" id="parallelLabel">mg sin θ</text>
+              <text class="force-label" id="normalCompLabel">mg cos θ</text>
+            </g>
+          </svg>
         </div>
 
-        <div class="status safe" id="status">滑らない</div>
-        <div class="formula" id="formula">tanθ = 0.466、μ = 0.50</div>
-
-        <div class="force-list" aria-label="力と判定値">
-          <div class="value-card">
-            <strong>斜面方向の重力 mg sinθ</strong>
-            <span id="parallelForce">0.00 N</span>
+        <div class="readouts" aria-label="角度の表示">
+          <div class="readout">
+            <div class="readout-label">斜面の角度</div>
+            <div class="readout-value" id="currentAngle">0.0°</div>
           </div>
-          <div class="value-card">
-            <strong>垂直抗力に関係する mg cosθ</strong>
-            <span id="normalForce">0.00 N</span>
-          </div>
-          <div class="value-card">
-            <strong>最大静止摩擦力 μmg cosθ</strong>
-            <span id="maxFriction">0.00 N</span>
-          </div>
-          <div class="value-card">
-            <strong>tanθ</strong>
-            <span id="tanValue">0.000</span>
-          </div>
-          <div class="value-card">
-            <strong>μ</strong>
-            <span id="muValue">0.50</span>
-          </div>
-          <div class="value-card">
-            <strong>滑り出す角度 arctan μ</strong>
-            <span id="criticalAngle">26.6°</span>
+          <div class="readout">
+            <div class="readout-label">滑り出した角度</div>
+            <div class="readout-value" id="slipAngle">--- °</div>
           </div>
         </div>
       </section>
 
-      <section class="panel controls" aria-label="操作パネル">
-        <div class="control-row">
-          <label for="theta">
-            斜面の角度 θ
-            <output id="thetaOutput">25°</output>
-          </label>
-          <input id="theta" type="range" min="0" max="60" step="1" value="25">
+      <aside class="controls" aria-label="操作パネル">
+        <div class="control">
+          <div class="control-head">
+            <label for="mass">質量 m</label>
+            <output class="value-box" id="massValue" for="mass">2.0 kg</output>
+          </div>
+          <input id="mass" type="range" min="0.5" max="5.0" step="0.1" value="2.0">
+          <div class="scale"><span>0.5</span><span>5.0</span></div>
         </div>
 
-        <div class="control-row">
-          <label for="mu">
-            静止摩擦係数 μ
-            <output id="muOutput">0.50</output>
-          </label>
-          <input id="mu" type="range" min="0.05" max="1.20" step="0.01" value="0.50">
+        <div class="control">
+          <div class="control-head">
+            <label for="mu">静止摩擦係数 μ</label>
+            <output class="value-box" id="muValue" for="mu">0.50</output>
+          </div>
+          <input id="mu" type="range" min="0.10" max="1.00" step="0.01" value="0.50">
+          <div class="scale"><span>0.10</span><span>1.00</span></div>
         </div>
 
-        <div class="control-row">
-          <label for="mass">
-            質量 m
-            <output id="massOutput">2.0 kg</output>
-          </label>
-          <input id="mass" type="range" min="0.5" max="10" step="0.1" value="2.0">
+        <button class="action primary" id="tiltButton" type="button">▶ ゆっくり傾ける</button>
+
+        <div class="control manual">
+          <div class="control-head">
+            <label for="angle">斜面の角度 θ</label>
+            <output class="value-box" id="angleValue" for="angle">0.0°</output>
+          </div>
+          <input id="angle" type="range" min="0" max="60" step="0.1" value="0">
+          <div class="scale"><span>0°</span><span>60°</span></div>
         </div>
 
-        <p class="note">質量 m を変えると、mg sinθ と μmg cosθ はどちらも同じ割合で大きくなります。そのため、滑るかどうかの境目は m ではなく θ と μ で決まります。</p>
-      </section>
-    </div>
-
-    <section class="explanation">
-      <div class="panel">
-        <h2>何を比べているか</h2>
-        <p>斜面に沿って下向きに引く力は mg sinθ です。これに対して、静止摩擦力が最大で出せる大きさは μmg cosθ です。滑り出す瞬間は、この2つがつり合う境目です。</p>
-      </div>
-      <div class="panel">
-        <h2>摩擦角の考え方</h2>
-        <p>mg sinθ &gt; μmg cosθ を整理すると tanθ &gt; μ になります。両辺に質量 m が含まれていて消えるので、質量を変えても滑り出す角度は変わりません。</p>
-      </div>
-    </section>
-  </main>
+        <div class="button-row">
+          <button class="action secondary" id="studyButton" type="button" aria-pressed="false">力ベクトル表示</button>
+          <button class="action reset" id="resetButton" type="button">⟳ リセット</button>
+        </div>
+      </aside>
+    </main>
+  </div>
 
   <script>
-    const g = 9.8;
+    const state = {
+      angle: 0,
+      mass: 2.0,
+      mu: 0.50,
+      slipAngle: null,
+      blockProgress: 0,
+      isSliding: false,
+      showForces: false,
+      autoTiltFrame: null,
+      slideFrame: null,
+      lastTiltTime: null,
+      lastSlideTime: null
+    };
 
-    const thetaSlider = document.getElementById("theta");
-    const muSlider = document.getElementById("mu");
-    const massSlider = document.getElementById("mass");
-    const scene = document.getElementById("scene");
-    const block = document.getElementById("block");
-    const status = document.getElementById("status");
+    const boardCorner = { x: 82, y: 416 };
+    const boardHalfThickness = 9;
+    const boardLength = 460;
+    const blockStart = 292;
+    const blockEnd = 78;
 
-    const thetaOutput = document.getElementById("thetaOutput");
-    const muOutput = document.getElementById("muOutput");
-    const massOutput = document.getElementById("massOutput");
-    const thetaInScene = document.getElementById("thetaInScene");
-    const formula = document.getElementById("formula");
-    const parallelForce = document.getElementById("parallelForce");
-    const normalForce = document.getElementById("normalForce");
-    const maxFriction = document.getElementById("maxFriction");
-    const tanValue = document.getElementById("tanValue");
-    const muValue = document.getElementById("muValue");
-    const criticalAngle = document.getElementById("criticalAngle");
+    const els = {
+      slopeGroup: document.getElementById("slopeGroup"),
+      blockGroup: document.getElementById("blockGroup"),
+      blockShape: document.getElementById("blockShape"),
+      angleArc: document.getElementById("angleArc"),
+      thetaSymbol: document.getElementById("thetaSymbol"),
+      forceLayer: document.getElementById("forceLayer"),
+      mass: document.getElementById("mass"),
+      mu: document.getElementById("mu"),
+      angle: document.getElementById("angle"),
+      massValue: document.getElementById("massValue"),
+      muValue: document.getElementById("muValue"),
+      angleValue: document.getElementById("angleValue"),
+      currentAngle: document.getElementById("currentAngle"),
+      slipAngle: document.getElementById("slipAngle"),
+      tiltButton: document.getElementById("tiltButton"),
+      studyButton: document.getElementById("studyButton"),
+      resetButton: document.getElementById("resetButton"),
+      mgArrow: document.getElementById("mgArrow"),
+      normalArrow: document.getElementById("normalArrow"),
+      frictionArrow: document.getElementById("frictionArrow"),
+      parallelGuide: document.getElementById("parallelGuide"),
+      normalGuide: document.getElementById("normalGuide"),
+      mgLabel: document.getElementById("mgLabel"),
+      normalLabel: document.getElementById("normalLabel"),
+      frictionLabel: document.getElementById("frictionLabel"),
+      parallelLabel: document.getElementById("parallelLabel"),
+      normalCompLabel: document.getElementById("normalCompLabel")
+    };
 
-    function format(value, digits) {
-      return value.toFixed(digits);
+    const studyLabelShow = els.studyButton.textContent;
+    const studyLabelHide = "力ベクトル非表示";
+
+    function toRad(deg) {
+      return deg * Math.PI / 180;
     }
 
-    function updateSimulation() {
-      const theta = Number(thetaSlider.value);
-      const mu = Number(muSlider.value);
-      const mass = Number(massSlider.value);
-      const rad = theta * Math.PI / 180;
-      const tanTheta = Math.tan(rad);
-      const mgSin = mass * g * Math.sin(rad);
-      const mgCos = mass * g * Math.cos(rad);
-      const maxStaticFriction = mu * mgCos;
-      const critical = Math.atan(mu) * 180 / Math.PI;
-      const isSliding = tanTheta > mu;
-
-      scene.style.setProperty("--theta", theta);
-      scene.style.setProperty("--half-theta", theta / 2);
-      block.classList.toggle("sliding", isSliding);
-      status.className = `status ${isSliding ? "danger" : "safe"}`;
-      status.textContent = isSliding ? "滑る" : "滑らない";
-
-      thetaOutput.textContent = `${theta}°`;
-      muOutput.textContent = format(mu, 2);
-      massOutput.textContent = `${format(mass, 1)} kg`;
-      thetaInScene.textContent = theta;
-
-      parallelForce.textContent = `${format(mgSin, 2)} N`;
-      normalForce.textContent = `${format(mgCos, 2)} N`;
-      maxFriction.textContent = `${format(maxStaticFriction, 2)} N`;
-      tanValue.textContent = format(tanTheta, 3);
-      muValue.textContent = format(mu, 2);
-      criticalAngle.textContent = `${format(critical, 1)}°`;
-      formula.textContent = `tanθ = ${format(tanTheta, 3)}、μ = ${format(mu, 2)}：tanθ ${isSliding ? ">" : "≦"} μ`;
+    function roundAngle(value) {
+      return Math.round(value * 10) / 10;
     }
 
-    thetaSlider.addEventListener("input", updateSimulation);
-    muSlider.addEventListener("input", updateSimulation);
-    massSlider.addEventListener("input", updateSimulation);
-    updateSimulation();
+    function boardOrigin(angleDeg) {
+      const rad = toRad(angleDeg);
+      return {
+        x: boardCorner.x - boardHalfThickness * Math.sin(rad),
+        y: boardCorner.y - boardHalfThickness * Math.cos(rad)
+      };
+    }
+
+    function rotatePoint(localX, localY, angleDeg) {
+      const rad = toRad(-angleDeg);
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      const origin = boardOrigin(angleDeg);
+      return {
+        x: origin.x + localX * cos - localY * sin,
+        y: origin.y + localX * sin + localY * cos
+      };
+    }
+
+    function setLine(line, start, end) {
+      line.setAttribute("x1", start.x);
+      line.setAttribute("y1", start.y);
+      line.setAttribute("x2", end.x);
+      line.setAttribute("y2", end.y);
+    }
+
+    function setText(text, point) {
+      text.setAttribute("x", point.x);
+      text.setAttribute("y", point.y);
+    }
+
+    function blockColor(mass) {
+      const ratio = (mass - 0.5) / 4.5;
+      const light = [216, 221, 228];
+      const dark = [92, 104, 122];
+      const rgb = light.map((start, index) => Math.round(start + (dark[index] - start) * ratio));
+      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    }
+
+    function stopAutoTilt() {
+      if (state.autoTiltFrame !== null) {
+        cancelAnimationFrame(state.autoTiltFrame);
+        state.autoTiltFrame = null;
+      }
+      state.lastTiltTime = null;
+      els.tiltButton.disabled = false;
+    }
+
+    function stopSlide() {
+      if (state.slideFrame !== null) {
+        cancelAnimationFrame(state.slideFrame);
+        state.slideFrame = null;
+      }
+      state.lastSlideTime = null;
+    }
+
+    function hasReachedSlip(angle = state.angle) {
+      return Math.tan(toRad(angle)) > state.mu;
+    }
+
+    function beginSlide() {
+      if (state.isSliding) {
+        return;
+      }
+
+      state.isSliding = true;
+      state.slipAngle = roundAngle(state.angle);
+      state.blockProgress = 0;
+      setStudyDisplay(false);
+      stopAutoTilt();
+      animateSlide();
+    }
+
+    function animateSlide(time) {
+      if (!state.isSliding) {
+        return;
+      }
+
+      if (state.lastSlideTime === null) {
+        state.lastSlideTime = time || performance.now();
+      }
+
+      const now = time || performance.now();
+      const delta = Math.min(48, now - state.lastSlideTime);
+      state.lastSlideTime = now;
+      state.blockProgress = Math.min(1, state.blockProgress + delta / 1800);
+
+      render();
+
+      if (state.blockProgress < 1) {
+        state.slideFrame = requestAnimationFrame(animateSlide);
+      } else {
+        state.slideFrame = null;
+        state.lastSlideTime = null;
+      }
+    }
+
+    function startAutoTilt() {
+      stopAutoTilt();
+      stopSlide();
+      state.angle = 0;
+      state.slipAngle = null;
+      state.blockProgress = 0;
+      state.isSliding = false;
+      els.angle.value = "0";
+      els.tiltButton.disabled = true;
+      render();
+      state.autoTiltFrame = requestAnimationFrame(stepAutoTilt);
+    }
+
+    function stepAutoTilt(time) {
+      if (state.lastTiltTime === null) {
+        state.lastTiltTime = time;
+      }
+
+      const delta = Math.min(48, time - state.lastTiltTime);
+      state.lastTiltTime = time;
+      state.angle = Math.min(60, state.angle + delta * 0.004);
+      state.angle = roundAngle(state.angle);
+      els.angle.value = String(state.angle);
+
+      if (hasReachedSlip()) {
+        beginSlide();
+        render();
+        return;
+      }
+
+      render();
+
+      if (state.angle < 60) {
+        state.autoTiltFrame = requestAnimationFrame(stepAutoTilt);
+      } else {
+        stopAutoTilt();
+      }
+    }
+
+    function manualAngleChanged() {
+      stopAutoTilt();
+      stopSlide();
+      state.angle = Number(els.angle.value);
+      state.slipAngle = null;
+      state.blockProgress = 0;
+      state.isSliding = false;
+
+      if (hasReachedSlip()) {
+        beginSlide();
+      }
+
+      render();
+    }
+
+    function updateForces(blockX) {
+      const angle = state.angle;
+      const rad = toRad(angle);
+      const center = rotatePoint(blockX, -34, angle);
+      const downhill = { x: -Math.cos(rad), y: Math.sin(rad) };
+      const uphill = { x: Math.cos(rad), y: -Math.sin(rad) };
+      const outward = { x: -Math.sin(rad), y: -Math.cos(rad) };
+      const inward = { x: Math.sin(rad), y: Math.cos(rad) };
+      const gravityLength = 28 * state.mass;
+      const parallelLength = gravityLength * Math.sin(rad);
+      const normalComponentLength = gravityLength * Math.cos(rad);
+
+      const mgEnd = { x: center.x, y: center.y + gravityLength };
+      const normalEnd = {
+        x: center.x + outward.x * normalComponentLength,
+        y: center.y + outward.y * normalComponentLength
+      };
+      const frictionEnd = {
+        x: center.x + uphill.x * parallelLength,
+        y: center.y + uphill.y * parallelLength
+      };
+      const parallelEnd = {
+        x: center.x + downhill.x * parallelLength,
+        y: center.y + downhill.y * parallelLength
+      };
+      const normalCompEnd = {
+        x: center.x + inward.x * normalComponentLength,
+        y: center.y + inward.y * normalComponentLength
+      };
+
+      setLine(els.mgArrow, center, mgEnd);
+      setLine(els.normalArrow, center, normalEnd);
+      setLine(els.frictionArrow, center, frictionEnd);
+      setLine(els.parallelGuide, center, parallelEnd);
+      setLine(els.normalGuide, center, normalCompEnd);
+
+      setText(els.mgLabel, { x: mgEnd.x - 58, y: mgEnd.y + 28 });
+      setText(els.normalLabel, { x: normalEnd.x - 24, y: normalEnd.y - 12 });
+      setText(els.frictionLabel, { x: frictionEnd.x + 8, y: frictionEnd.y - 6 });
+      setText(els.parallelLabel, { x: parallelEnd.x - 120, y: parallelEnd.y + 18 });
+      setText(els.normalCompLabel, { x: normalCompEnd.x + 10, y: normalCompEnd.y + 26 });
+    }
+
+    function setStudyDisplay(show) {
+      state.showForces = show && !state.isSliding;
+      els.studyButton.classList.toggle("active", state.showForces);
+      els.studyButton.setAttribute("aria-pressed", String(state.showForces));
+      els.studyButton.textContent = state.showForces ? studyLabelHide : studyLabelShow;
+    }
+
+    function updateAngleArc(angle) {
+      const r = 62;
+      const end = {
+        x: boardCorner.x + r * Math.cos(toRad(angle)),
+        y: boardCorner.y - r * Math.sin(toRad(angle))
+      };
+      const largeArc = angle > 180 ? 1 : 0;
+      els.angleArc.setAttribute(
+        "d",
+        `M ${boardCorner.x + r} ${boardCorner.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y}`
+      );
+
+      const labelLocalX = 106;
+      const boardTopNearLabel = rotatePoint(labelLocalX, -boardHalfThickness, angle);
+      const boardBottomNearLabel = rotatePoint(labelLocalX, boardHalfThickness, angle);
+      let labelX;
+      let labelY;
+
+      if (angle < 20) {
+        labelX = boardCorner.x + 96;
+        labelY = boardCorner.y + 34;
+      } else {
+        labelX = boardBottomNearLabel.x + 14;
+        labelY = Math.min(boardCorner.y - 8, boardBottomNearLabel.y + 42);
+      }
+
+      els.thetaSymbol.setAttribute("x", labelX);
+      els.thetaSymbol.setAttribute("y", labelY);
+    }
+
+    function render() {
+      const angle = roundAngle(state.angle);
+      const blockX = blockStart + (blockEnd - blockStart) * state.blockProgress;
+      const origin = boardOrigin(angle);
+
+      els.slopeGroup.setAttribute("transform", `translate(${origin.x} ${origin.y}) rotate(${-angle})`);
+      els.blockGroup.setAttribute("transform", `translate(${blockX} 0)`);
+      els.blockShape.setAttribute("style", `fill: ${blockColor(state.mass)}`);
+      els.currentAngle.textContent = `${angle.toFixed(1)}°`;
+      els.angleValue.textContent = `${angle.toFixed(1)}°`;
+      els.massValue.textContent = `${state.mass.toFixed(1)} kg`;
+      els.muValue.textContent = state.mu.toFixed(2);
+      els.slipAngle.textContent = state.slipAngle === null ? "--- °" : `${state.slipAngle.toFixed(1)}°`;
+      els.forceLayer.classList.toggle("visible", state.showForces && !state.isSliding);
+
+      updateAngleArc(angle);
+      updateForces(blockX);
+    }
+
+    function resetAll() {
+      stopAutoTilt();
+      stopSlide();
+      state.angle = 0;
+      state.mass = 2.0;
+      state.mu = 0.50;
+      state.slipAngle = null;
+      state.blockProgress = 0;
+      state.isSliding = false;
+      state.showForces = false;
+
+      els.angle.value = "0";
+      els.mass.value = "2.0";
+      els.mu.value = "0.50";
+      setStudyDisplay(false);
+      render();
+    }
+
+    els.mass.addEventListener("input", () => {
+      state.mass = Number(els.mass.value);
+      render();
+    });
+
+    els.mu.addEventListener("input", () => {
+      state.mu = Number(els.mu.value);
+      if (!state.isSliding && hasReachedSlip()) {
+        beginSlide();
+      }
+      render();
+    });
+
+    els.angle.addEventListener("input", manualAngleChanged);
+    els.tiltButton.addEventListener("click", startAutoTilt);
+    els.resetButton.addEventListener("click", resetAll);
+    els.studyButton.addEventListener("click", () => {
+      setStudyDisplay(!state.showForces);
+      render();
+    });
+
+    render();
   </script>
 </body>
 </html>
+
