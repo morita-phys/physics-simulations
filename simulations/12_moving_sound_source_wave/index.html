@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>音源が動くと、観測者が受け取る音波はどうなるだろう？</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #182235;
+      --muted: #5c6a7c;
+      --line: #d6deea;
+      --field: #eef4fb;
+      --source: #d73333;
+      --source-dark: #a51f1f;
+      --rear: #2563d8;
+      --front: #168447;
+      --wave: #2f70d0;
+      --accent: #204b8f;
+      --button: #1f5fbf;
+      --button-dark: #184b99;
+      --warn: #9c6b14;
+      --shadow: 0 10px 24px rgba(29, 45, 73, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Yu Gothic", "Hiragino Sans", "Meiryo", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    body {
+      min-width: 900px;
+    }
+
+    .app {
+      height: 100vh;
+      max-width: 100vw;
+      padding: 12px 16px 14px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(20px, 2.4vw, 32px);
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-align: center;
+    }
+
+    .simulation {
+      min-height: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(180px, 0.65fr) auto;
+      align-items: end;
+      gap: 12px;
+    }
+
+    .control-group {
+      min-width: 0;
+    }
+
+    .control-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-start;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-weight: 800;
+    }
+
+    .control-head span:last-child {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      color: var(--accent);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--button);
+    }
+
+    input[type="range"]:disabled {
+      opacity: 0.55;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--button);
+      flex: 0 0 auto;
+    }
+
+    .range-scale {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .range-scale span:nth-child(1) {
+      text-align: left;
+    }
+
+    .range-scale span:nth-child(2) {
+      text-align: center;
+    }
+
+    .range-scale span:nth-child(3) {
+      text-align: right;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 7px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .check-row:has(input:disabled) {
+      opacity: 0.58;
+    }
+
+    .advanced-wrap {
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .advanced-control[hidden] {
+      display: none;
+    }
+
+    .advanced-toggle {
+      min-width: 150px;
+      color: var(--muted);
+      background: #ffffff;
+      justify-self: stretch;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(88px, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      min-height: 44px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      background: #ffffff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    button.primary {
+      color: #ffffff;
+      background: var(--button);
+      border-color: var(--button);
+    }
+
+    button.primary:hover {
+      background: var(--button-dark);
+      border-color: var(--button-dark);
+    }
+
+    button:hover {
+      background: #f6f9fd;
+    }
+
+    @media (max-width: 1120px) {
+      .app {
+        padding: 9px 10px 10px;
+        gap: 8px;
+      }
+
+      h1 {
+        font-size: clamp(18px, 2.5vw, 26px);
+      }
+
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .advanced-wrap {
+        grid-column: span 1;
+      }
+
+      .buttons {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-height: 660px) {
+      .app {
+        padding-top: 8px;
+        padding-bottom: 8px;
+        gap: 7px;
+      }
+
+      header {
+        min-height: 30px;
+      }
+
+      h1 {
+        font-size: clamp(17px, 2.2vw, 24px);
+      }
+
+      .controls {
+        padding: 8px 10px;
+        gap: 9px;
+      }
+
+      .control-head {
+        margin-bottom: 2px;
+        font-size: 14px;
+      }
+
+      button {
+        min-height: 38px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>音源が動くと、観測者が受け取る音波はどうなるだろう？</h1>
+    </header>
+
+    <section class="simulation" aria-label="上から見た音波の広がり">
+      <canvas id="simCanvas" aria-label="音源、波面、前方と後方の観測者を上から見た図"></canvas>
+    </section>
+
+    <section class="controls" aria-label="操作パネル">
+      <div class="control-group">
+        <label class="control-head" for="sourceSpeed">
+          <span>音源の速さ</span>
+          <span id="sourceSpeedValue">0 m/s</span>
+        </label>
+        <input id="sourceSpeed" type="range" min="0" max="170" step="5" value="0">
+        <div class="range-scale" aria-hidden="true">
+          <span>0</span>
+          <span>85</span>
+          <span>170 m/s</span>
+        </div>
+        <label class="check-row" for="doubleWaveRate">
+          <input id="doubleWaveRate" type="checkbox">
+          <span>音波の振動数を2倍</span>
+        </label>
+      </div>
+
+      <div class="advanced-wrap">
+        <button class="advanced-toggle" id="toggleAdvanced" type="button" aria-expanded="false" aria-controls="advancedControl">音速（発展）を表示</button>
+        <div class="control-group advanced-control" id="advancedControl" hidden>
+          <label class="control-head" for="soundSpeed">
+            <span>音速（発展）</span>
+            <span id="soundSpeedValue">340 m/s</span>
+          </label>
+          <input id="soundSpeed" type="range" min="250" max="400" step="10" value="340">
+          <div class="range-scale" aria-hidden="true">
+            <span>250</span>
+            <span>325</span>
+            <span>400 m/s</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button class="primary" id="startButton" type="button">開始</button>
+        <button id="pauseButton" type="button">一時停止</button>
+        <button id="resetButton" type="button">リセット</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const canvas = document.getElementById("simCanvas");
+      const ctx = canvas.getContext("2d");
+      const sourceSpeedSlider = document.getElementById("sourceSpeed");
+      const soundSpeedSlider = document.getElementById("soundSpeed");
+      const doubleWaveRateCheckbox = document.getElementById("doubleWaveRate");
+      const sourceSpeedValue = document.getElementById("sourceSpeedValue");
+      const soundSpeedValue = document.getElementById("soundSpeedValue");
+      const toggleAdvanced = document.getElementById("toggleAdvanced");
+      const advancedControl = document.getElementById("advancedControl");
+      const startButton = document.getElementById("startButton");
+      const pauseButton = document.getElementById("pauseButton");
+      const resetButton = document.getElementById("resetButton");
+
+      const OBSERVE_TIME = 12.0;
+      const BASE_EMIT_INTERVAL = 0.5;
+      const REAR_OBSERVER_X = -2200;
+      const FRONT_OBSERVER_X = 2200;
+      const WORLD_X_MIN = -2850;
+      const WORLD_X_MAX = 2850;
+      const WORLD_Y_SPAN = 2600;
+      const COLORS = {
+        ink: "#182235",
+        muted: "#5c6a7c",
+        line: "#d6deea",
+        source: "#d73333",
+        sourceDark: "#a51f1f",
+        rear: "#2563d8",
+        front: "#168447",
+        wave: "#2f70d0",
+        field: "#eef4fb",
+        warn: "#9c6b14"
+      };
+
+      const state = {
+        status: "idle",
+        elapsed: 0,
+        startClock: 0,
+        sourceSpeed: 0,
+        soundSpeed: 340,
+        nextEmit: 0,
+        waves: [],
+        rearCount: 0,
+        frontCount: 0,
+        rearFlashUntil: 0,
+        frontFlashUntil: 0,
+        cssWidth: 0,
+        cssHeight: 0,
+        scale: 1,
+        originX: 0,
+        originY: 0
+      };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function formatTime(value) {
+        return value.toFixed(1);
+      }
+
+      function getEmitInterval() {
+        return doubleWaveRateCheckbox.checked ? BASE_EMIT_INTERVAL / 2 : BASE_EMIT_INTERVAL;
+      }
+
+      function worldToScreen(x, y) {
+        return {
+          x: state.originX + x * state.scale,
+          y: state.originY - y * state.scale
+        };
+      }
+
+      function updateTransform() {
+        const plotPadX = 42;
+        const plotPadY = 34;
+        const usableW = Math.max(1, state.cssWidth - plotPadX * 2);
+        const usableH = Math.max(1, state.cssHeight - plotPadY * 2);
+        const sx = usableW / (WORLD_X_MAX - WORLD_X_MIN);
+        const sy = usableH / WORLD_Y_SPAN;
+        state.scale = Math.min(sx, sy);
+        state.originX = state.cssWidth / 2;
+        state.originY = state.cssHeight / 2 + 12;
+      }
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        state.cssWidth = Math.max(1, rect.width);
+        state.cssHeight = Math.max(1, rect.height);
+        const pixelWidth = Math.round(state.cssWidth * dpr);
+        const pixelHeight = Math.round(state.cssHeight * dpr);
+        if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+          canvas.width = pixelWidth;
+          canvas.height = pixelHeight;
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        updateTransform();
+        draw(performance.now());
+      }
+
+      function updateReadouts() {
+        sourceSpeedValue.textContent = `${state.sourceSpeed} m/s`;
+        soundSpeedValue.textContent = `${state.soundSpeed} m/s`;
+      }
+
+      function updateControlState() {
+        const locked = state.status === "running" || state.status === "paused";
+        sourceSpeedSlider.disabled = locked;
+        soundSpeedSlider.disabled = locked;
+        doubleWaveRateCheckbox.disabled = locked;
+        toggleAdvanced.disabled = locked;
+        pauseButton.disabled = state.status !== "running";
+        startButton.textContent = state.status === "paused" ? "再開" : "開始";
+      }
+
+      function resetTrial() {
+        state.status = "idle";
+        state.elapsed = 0;
+        state.startClock = 0;
+        state.nextEmit = 0;
+        state.waves = [];
+        state.rearCount = 0;
+        state.frontCount = 0;
+        state.rearFlashUntil = 0;
+        state.frontFlashUntil = 0;
+        updateControlState();
+        draw(performance.now());
+      }
+
+      function beginTrial() {
+        resetTrial();
+        state.status = "running";
+        state.startClock = performance.now();
+        updateControlState();
+      }
+
+      function resumeTrial() {
+        state.status = "running";
+        state.startClock = performance.now() - state.elapsed * 1000;
+        updateControlState();
+      }
+
+      function pauseTrial() {
+        if (state.status !== "running") return;
+        state.elapsed = clamp((performance.now() - state.startClock) / 1000, 0, OBSERVE_TIME);
+        state.status = "paused";
+        updateControlState();
+        draw(performance.now());
+      }
+
+      function endTrial() {
+        state.elapsed = OBSERVE_TIME;
+        syncWavesAndCounts(performance.now());
+        state.status = "ended";
+        updateControlState();
+        draw(performance.now());
+      }
+
+      function getSourceXAt(time) {
+        return state.sourceSpeed * time;
+      }
+
+      function makeWave(emitTime) {
+        return {
+          t: emitTime,
+          x: getSourceXAt(emitTime),
+          rearArrived: false,
+          frontArrived: false
+        };
+      }
+
+      function syncWavesAndCounts(now) {
+        const emitInterval = getEmitInterval();
+        while (state.nextEmit <= state.elapsed + 1e-9 && state.nextEmit <= OBSERVE_TIME + 1e-9) {
+          state.waves.push(makeWave(Number(state.nextEmit.toFixed(6))));
+          state.nextEmit += emitInterval;
+        }
+
+        for (const wave of state.waves) {
+          const rearArrival = wave.t + Math.abs(REAR_OBSERVER_X - wave.x) / state.soundSpeed;
+          const frontArrival = wave.t + Math.abs(FRONT_OBSERVER_X - wave.x) / state.soundSpeed;
+
+          if (!wave.rearArrived && state.elapsed + 1e-9 >= rearArrival) {
+            wave.rearArrived = true;
+            state.rearCount += 1;
+            state.rearFlashUntil = now + 230;
+          }
+          if (!wave.frontArrived && state.elapsed + 1e-9 >= frontArrival) {
+            wave.frontArrived = true;
+            state.frontCount += 1;
+            state.frontFlashUntil = now + 230;
+          }
+        }
+      }
+
+      function updateRunningTime(now) {
+        if (state.status !== "running") return;
+        state.elapsed = clamp((now - state.startClock) / 1000, 0, OBSERVE_TIME);
+        syncWavesAndCounts(now);
+        if (state.elapsed >= OBSERVE_TIME) {
+          endTrial();
+        }
+      }
+
+      function drawBackground() {
+        const w = state.cssWidth;
+        const h = state.cssHeight;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(47, 112, 208, 0.08)";
+        ctx.lineWidth = 1;
+        const grid = Math.max(22, 200 * state.scale);
+        for (let x = state.originX % grid; x < w; x += grid) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+          ctx.stroke();
+        }
+        for (let y = state.originY % grid; y < h; y += grid) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawGuideLine() {
+        const left = worldToScreen(WORLD_X_MIN, 0);
+        const right = worldToScreen(WORLD_X_MAX, 0);
+        const y = worldToScreen(0, 0).y;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(92, 106, 124, 0.6)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([9, 8]);
+        ctx.beginPath();
+        ctx.moveTo(left.x, y);
+        ctx.lineTo(right.x, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = COLORS.muted;
+        ctx.font = "500 13px system-ui, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("上から見た図", 16, 14);
+        ctx.restore();
+      }
+
+      function drawWaves() {
+        ctx.save();
+        ctx.strokeStyle = `rgba(47, 112, 208, 0.55)`;
+        ctx.lineWidth = 1.6;
+        for (const wave of state.waves) {
+          if (state.elapsed < wave.t) continue;
+          const age = state.elapsed - wave.t;
+          const radius = age * state.soundSpeed * state.scale;
+          const center = worldToScreen(wave.x, 0);
+          const alpha = clamp(0.2 + 0.5 * (1 - age / OBSERVE_TIME), 0.2, 0.7);
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function roundedRect(x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + width, y, x + width, y + height, radius);
+        ctx.arcTo(x + width, y + height, x, y + height, radius);
+        ctx.arcTo(x, y + height, x, y, radius);
+        ctx.arcTo(x, y, x + width, y, radius);
+        ctx.closePath();
+      }
+
+      function drawLabel(text, x, y, color) {
+        ctx.save();
+        ctx.font = "500 14px system-ui, sans-serif";
+        const textWidth = ctx.measureText(text).width;
+        const width = textWidth + 18;
+        const height = 26;
+        roundedRect(x - width / 2, y - height / 2, width, height, 7);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+        ctx.strokeStyle = "rgba(92, 106, 124, 0.22)";
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, x, y + 0.5);
+        ctx.restore();
+      }
+
+      function drawCounter(labelX, labelY, count, color, active) {
+        ctx.save();
+        const width = 118;
+        const height = 54;
+        roundedRect(labelX - width / 2, labelY - height / 2, width, height, 8);
+        ctx.fillStyle = active ? "rgba(255, 248, 220, 0.98)" : "rgba(255, 255, 255, 0.92)";
+        ctx.strokeStyle = active ? COLORS.warn : "rgba(92, 106, 124, 0.24)";
+        ctx.lineWidth = active ? 2 : 1;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = COLORS.muted;
+        ctx.font = "500 13px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("到達回数", labelX, labelY - 11);
+
+        ctx.fillStyle = active ? COLORS.warn : color;
+        ctx.font = active ? "800 25px system-ui, sans-serif" : "800 23px system-ui, sans-serif";
+        ctx.fillText(String(count), labelX, labelY + 14);
+        ctx.restore();
+      }
+
+      function drawObserver(xWorld, label, color, count, flashUntil, now, side) {
+        const pos = worldToScreen(xWorld, 0);
+        const active = now < flashUntil;
+        const radius = active ? 16 : 13;
+
+        ctx.save();
+        ctx.fillStyle = active ? "rgba(255, 248, 220, 0.95)" : "#ffffff";
+        ctx.strokeStyle = color;
+        ctx.lineWidth = active ? 4 : 3;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        drawLabel(label, pos.x, pos.y + 36, color);
+        const counterY = clamp(pos.y - 62, 50, state.cssHeight - 58);
+        const offset = side === "rear" ? -28 : 28;
+        drawCounter(pos.x + offset, counterY, count, color, active);
+      }
+
+      function drawSource(now) {
+        const sourceX = getSourceXAt(state.elapsed);
+        const pos = worldToScreen(sourceX, 0);
+
+        ctx.save();
+        ctx.fillStyle = COLORS.source;
+        ctx.strokeStyle = COLORS.sourceDark;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = COLORS.sourceDark;
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(pos.x + 23, pos.y);
+        ctx.lineTo(pos.x + 58, pos.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pos.x + 58, pos.y);
+        ctx.lineTo(pos.x + 47, pos.y - 8);
+        ctx.moveTo(pos.x + 58, pos.y);
+        ctx.lineTo(pos.x + 47, pos.y + 8);
+        ctx.stroke();
+        ctx.restore();
+
+        const labelY = clamp(pos.y - 35, 30, state.cssHeight - 20);
+        drawLabel("音源", pos.x, labelY, COLORS.sourceDark);
+      }
+
+      function drawTime() {
+        const text = `経過時間 ${formatTime(state.elapsed)} s / ${formatTime(OBSERVE_TIME)} s`;
+        ctx.save();
+        ctx.font = "500 14px system-ui, sans-serif";
+        const width = ctx.measureText(text).width + 20;
+        const height = 30;
+        const x = state.cssWidth - width - 16;
+        const y = 14;
+        roundedRect(x, y, width, height, 8);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
+        ctx.strokeStyle = "rgba(92, 106, 124, 0.22)";
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = COLORS.ink;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, x + 10, y + height / 2 + 0.5);
+        ctx.restore();
+      }
+
+      function draw(now) {
+        drawBackground();
+        drawGuideLine();
+        drawWaves();
+        drawObserver(REAR_OBSERVER_X, "後方の観測者", COLORS.rear, state.rearCount, state.rearFlashUntil, now, "rear");
+        drawObserver(FRONT_OBSERVER_X, "前方の観測者", COLORS.front, state.frontCount, state.frontFlashUntil, now, "front");
+        drawSource(now);
+        drawTime();
+      }
+
+      function loop(now) {
+        updateRunningTime(now);
+        draw(now);
+        requestAnimationFrame(loop);
+      }
+
+      function handleSliderChange() {
+        state.sourceSpeed = Number(sourceSpeedSlider.value);
+        state.soundSpeed = Number(soundSpeedSlider.value);
+        updateReadouts();
+        if (state.status === "ended") {
+          resetTrial();
+        } else {
+          draw(performance.now());
+        }
+      }
+
+      sourceSpeedSlider.addEventListener("input", handleSliderChange);
+      soundSpeedSlider.addEventListener("input", handleSliderChange);
+
+      doubleWaveRateCheckbox.addEventListener("change", () => {
+        if (state.status === "ended") {
+          resetTrial();
+        } else {
+          draw(performance.now());
+        }
+      });
+
+      toggleAdvanced.addEventListener("click", () => {
+        const willOpen = advancedControl.hidden;
+        advancedControl.hidden = !willOpen;
+        toggleAdvanced.setAttribute("aria-expanded", String(willOpen));
+        toggleAdvanced.textContent = willOpen ? "音速（発展）を隠す" : "音速（発展）を表示";
+      });
+
+      startButton.addEventListener("click", () => {
+        if (state.status === "paused") {
+          resumeTrial();
+        } else {
+          beginTrial();
+        }
+      });
+
+      pauseButton.addEventListener("click", pauseTrial);
+      resetButton.addEventListener("click", resetTrial);
+      window.addEventListener("resize", resizeCanvas);
+
+      sourceSpeedSlider.value = "0";
+      soundSpeedSlider.value = "340";
+      state.sourceSpeed = 0;
+      state.soundSpeed = 340;
+      updateReadouts();
+      updateControlState();
+      resizeCanvas();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
