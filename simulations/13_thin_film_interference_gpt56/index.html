@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>膜の厚さが変わると、反射光の見え方はどう変わるだろう？</title>
+  <style>
+    :root {
+      --page: #eef2f5;
+      --panel: #ffffff;
+      --ink: #17212b;
+      --muted: #5d6b78;
+      --border: #cbd4dc;
+      --accent: #176b87;
+      --accent-soft: #e2f1f5;
+      --film: #cfeef4;
+      --air: #f8fafb;
+      --ray: #d62f2f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--page);
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    }
+
+    button,
+    input,
+    summary {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 10px;
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
+      max-height: 100vh;
+      padding: 12px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 4px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 38fr) minmax(0, 32fr) minmax(300px, 30fr);
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .visual-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .film-panel {
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    h2 {
+      margin: 0;
+      padding: 11px 14px 9px;
+      border-bottom: 1px solid var(--border);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .diagram-wrap {
+      min-height: 0;
+      padding: 8px 10px 4px;
+    }
+
+    #crossSection {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      background: var(--air);
+      border: 1px solid var(--border);
+    }
+
+    .film-view-wrap {
+      display: grid;
+      place-items: center;
+      min-height: 0;
+      padding: 14px;
+      background: #f7f9fa;
+    }
+
+    #filmView {
+      width: min(100%, 390px);
+      max-height: 100%;
+      aspect-ratio: 1;
+      background: #000000;
+      border: 2px solid #53616d;
+    }
+
+    .readout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+      gap: 8px;
+      min-height: 58px;
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      background: #f8fafb;
+    }
+
+    .readout-item {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .readout-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .readout-value {
+      overflow-wrap: anywhere;
+      font-size: 15px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .controls {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 12px 14px 14px;
+    }
+
+    fieldset {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .control-group {
+      margin: 0;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .control-group:first-child {
+      padding-top: 0;
+    }
+
+    legend,
+    .control-title {
+      display: block;
+      width: 100%;
+      margin: 0 0 8px;
+      padding: 0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .choice input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+
+    .choice span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 7px 8px;
+      color: var(--ink);
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .choice input:checked + span {
+      color: #0f4d62;
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .choice input:focus-visible + span {
+      outline: 3px solid rgba(23, 107, 135, 0.28);
+      outline-offset: 2px;
+    }
+
+    .color-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .color-choice span {
+      justify-content: flex-start;
+      gap: 7px;
+      min-height: 36px;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .swatch {
+      flex: 0 0 auto;
+      width: 14px;
+      height: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.35);
+      border-radius: 50%;
+    }
+
+    #colorFieldset:disabled {
+      opacity: 0.45;
+    }
+
+    #colorFieldset:disabled .choice span {
+      cursor: not-allowed;
+    }
+
+    .range-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .range-value {
+      white-space: nowrap;
+      color: var(--accent);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin: 4px 0 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .range-limits {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .reset-button {
+      width: 100%;
+      min-height: 40px;
+      color: #ffffff;
+      background: #3b4a56;
+      border: 1px solid #3b4a56;
+      border-radius: 5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .reset-button:hover {
+      background: #2c3943;
+    }
+
+    .reset-button:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid rgba(23, 107, 135, 0.3);
+      outline-offset: 2px;
+    }
+
+    details {
+      padding-top: 12px;
+    }
+
+    summary {
+      min-height: 36px;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .detail-control {
+      padding: 8px 0 2px;
+    }
+
+    .svg-label {
+      fill: var(--ink);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .svg-medium-label {
+      fill: #42515e;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .svg-boundary {
+      stroke: #60717e;
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .svg-ray {
+      fill: none;
+      stroke: var(--ray);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .svg-thickness {
+      fill: none;
+      stroke: #33424e;
+      stroke-width: 1.8;
+      vector-effect: non-scaling-stroke;
+    }
+
+    @media (max-height: 680px) and (min-width: 901px) {
+      .app {
+        gap: 7px;
+        padding: 8px;
+      }
+
+      header {
+        min-height: 34px;
+      }
+
+      h1 {
+        font-size: 19px;
+      }
+
+      main {
+        gap: 7px;
+      }
+
+      h2 {
+        padding: 8px 11px 7px;
+        font-size: 15px;
+      }
+
+      .controls {
+        padding: 9px 12px;
+      }
+
+      .control-group {
+        padding: 8px 0;
+      }
+
+      .choice span {
+        min-height: 33px;
+        padding: 5px 7px;
+      }
+
+      .readout {
+        min-height: 50px;
+        padding: 6px 10px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        max-height: none;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .visual-panel {
+        min-height: 620px;
+      }
+
+      .controls-panel {
+        min-height: 500px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>膜の厚さが変わると、反射光の見え方はどう変わるだろう？</h1>
+    </header>
+
+    <main>
+      <section class="panel visual-panel" aria-labelledby="cross-section-heading">
+        <h2 id="cross-section-heading">断面図</h2>
+        <div class="diagram-wrap">
+          <svg id="crossSection" viewBox="0 0 500 560" preserveAspectRatio="none" role="img" aria-labelledby="diagramTitle diagramDesc">
+            <title id="diagramTitle">空気、薄膜、空気の断面図</title>
+            <desc id="diagramDesc">上面で戻る光路と、膜内を往復して下面で戻る光路を横にずらして示す。</desc>
+            <defs>
+              <marker id="rayArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#d62f2f"></path>
+              </marker>
+              <marker id="dimensionArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth">
+                <path d="M0,4 L8,0 L8,8 Z" fill="#33424e"></path>
+              </marker>
+            </defs>
+
+            <rect x="1" y="1" width="498" height="558" fill="#f8fafb"></rect>
+            <rect id="filmRect" x="1" y="190" width="424" height="4" fill="#cfeef4"></rect>
+            <line class="svg-boundary" x1="1" y1="190" x2="425" y2="190"></line>
+            <line id="bottomBoundary" class="svg-boundary" x1="1" y1="194" x2="425" y2="194"></line>
+
+            <text class="svg-medium-label" x="18" y="28">空気</text>
+            <text id="filmLabel" class="svg-medium-label" x="18" y="216">薄膜</text>
+            <text id="lowerAirLabel" class="svg-medium-label" x="18" y="532">空気</text>
+
+            <text class="svg-label" x="72" y="54">入射光</text>
+            <text class="svg-label" x="140" y="92">反射光①</text>
+            <text class="svg-label" x="290" y="92">反射光②</text>
+
+            <line class="svg-ray" x1="105" y1="62" x2="105" y2="176" marker-end="url(#rayArrow)"></line>
+            <path class="svg-ray" d="M105 176 C105 194 135 194 135 176"></path>
+            <line class="svg-ray" x1="135" y1="176" x2="135" y2="55" marker-end="url(#rayArrow)"></line>
+
+            <line id="deepIncoming" class="svg-ray" x1="255" y1="62" x2="255" y2="184" marker-end="url(#rayArrow)"></line>
+            <path id="deepTurn" class="svg-ray" d="M255 184 C255 198 285 198 285 184"></path>
+            <line id="deepReflected" class="svg-ray" x1="285" y1="184" x2="285" y2="55" marker-end="url(#rayArrow)"></line>
+
+            <line id="thicknessArrow" class="svg-thickness" x1="455" y1="194" x2="455" y2="190" marker-start="url(#dimensionArrow)" marker-end="url(#dimensionArrow)"></line>
+            <text id="thicknessLabel" class="svg-label" x="474" y="202" text-anchor="middle" transform="rotate(-90 474 202)">膜の厚さ</text>
+          </svg>
+        </div>
+        <div class="readout" aria-label="現在の設定値">
+          <div class="readout-item">
+            <span class="readout-label">膜の厚さ</span>
+            <span id="thicknessReadout" class="readout-value">0 nm</span>
+          </div>
+          <div class="readout-item">
+            <span class="readout-label">波長</span>
+            <span id="wavelengthReadout" class="readout-value">530 nm</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel visual-panel film-panel" aria-labelledby="film-view-heading">
+        <h2 id="film-view-heading">膜の見え方</h2>
+        <div class="film-view-wrap">
+          <div id="filmView" role="img" aria-label="上から見た一様な薄膜"></div>
+        </div>
+      </section>
+
+      <aside class="panel controls-panel" aria-labelledby="controls-heading">
+        <h2 id="controls-heading">操作</h2>
+        <div class="controls">
+          <fieldset class="control-group">
+            <legend>光の種類</legend>
+            <div class="segmented">
+              <label class="choice">
+                <input type="radio" name="lightType" value="mono" checked>
+                <span>単色光</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="lightType" value="white">
+                <span>白色光</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset id="colorFieldset" class="control-group">
+            <legend>単色光の色</legend>
+            <div class="color-options">
+              <label class="choice color-choice">
+                <input type="radio" name="color" value="red">
+                <span><i class="swatch" style="background:#ff3b30"></i>赤 650 nm</span>
+              </label>
+              <label class="choice color-choice">
+                <input type="radio" name="color" value="yellow">
+                <span><i class="swatch" style="background:#ffd60a"></i>黄 580 nm</span>
+              </label>
+              <label class="choice color-choice">
+                <input type="radio" name="color" value="green" checked>
+                <span><i class="swatch" style="background:#34c759"></i>緑 530 nm</span>
+              </label>
+              <label class="choice color-choice">
+                <input type="radio" name="color" value="blue">
+                <span><i class="swatch" style="background:#0a84ff"></i>青 470 nm</span>
+              </label>
+              <label class="choice color-choice">
+                <input type="radio" name="color" value="violet">
+                <span><i class="swatch" style="background:#7d3cff"></i>紫 420 nm</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="control-group">
+            <div class="range-heading">
+              <label class="control-title" for="thicknessRange">膜の厚さ</label>
+              <output id="thicknessValue" class="range-value" for="thicknessRange">0 nm</output>
+            </div>
+            <input id="thicknessRange" type="range" min="0" max="1000" step="5" value="0">
+            <div class="range-limits" aria-hidden="true">
+              <span>0 nm</span>
+              <span>1000 nm</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <button id="resetButton" class="reset-button" type="button">リセット</button>
+          </div>
+
+          <details id="detailsPanel">
+            <summary>詳細設定</summary>
+            <div class="detail-control">
+              <div class="range-heading">
+                <label class="control-title" for="indexRange">屈折率</label>
+                <output id="indexValue" class="range-value" for="indexRange">1.33</output>
+              </div>
+              <input id="indexRange" type="range" min="1.10" max="2.00" step="0.01" value="1.33">
+              <div class="range-limits" aria-hidden="true">
+                <span>1.10</span>
+                <span>2.00</span>
+              </div>
+            </div>
+          </details>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const colors = {
+        red: { label: "赤", wavelength: 650, rgb: [255, 59, 48] },
+        yellow: { label: "黄", wavelength: 580, rgb: [255, 214, 10] },
+        green: { label: "緑", wavelength: 530, rgb: [52, 199, 89] },
+        blue: { label: "青", wavelength: 470, rgb: [10, 132, 255] },
+        violet: { label: "紫", wavelength: 420, rgb: [125, 60, 255] }
+      };
+
+      const colorOrder = ["red", "yellow", "green", "blue", "violet"];
+      const whiteWavelengthText = "420、470、530、580、650 nm";
+      const state = {
+        lightType: "mono",
+        selectedColor: "green",
+        thickness: 0,
+        refractiveIndex: 1.33
+      };
+
+      const filmView = document.getElementById("filmView");
+      const colorFieldset = document.getElementById("colorFieldset");
+      const thicknessRange = document.getElementById("thicknessRange");
+      const indexRange = document.getElementById("indexRange");
+      const thicknessValue = document.getElementById("thicknessValue");
+      const indexValue = document.getElementById("indexValue");
+      const thicknessReadouts = [
+        document.getElementById("thicknessReadout")
+      ];
+      const wavelengthReadouts = [
+        document.getElementById("wavelengthReadout")
+      ];
+      const detailsPanel = document.getElementById("detailsPanel");
+
+      const filmRect = document.getElementById("filmRect");
+      const bottomBoundary = document.getElementById("bottomBoundary");
+      const deepIncoming = document.getElementById("deepIncoming");
+      const deepTurn = document.getElementById("deepTurn");
+      const deepReflected = document.getElementById("deepReflected");
+      const thicknessArrow = document.getElementById("thicknessArrow");
+      const thicknessLabel = document.getElementById("thicknessLabel");
+      const filmLabel = document.getElementById("filmLabel");
+      const lowerAirLabel = document.getElementById("lowerAirLabel");
+
+      function intensity(wavelength) {
+        const phase = 2 * Math.PI * state.refractiveIndex * state.thickness / wavelength;
+        return Math.sin(phase) ** 2;
+      }
+
+      function srgbToLinear(channel) {
+        const value = channel / 255;
+        return value <= 0.04045
+          ? value / 12.92
+          : ((value + 0.055) / 1.055) ** 2.4;
+      }
+
+      function linearToSrgb(value) {
+        const bounded = Math.max(0, Math.min(1, value));
+        const srgb = bounded <= 0.0031308
+          ? 12.92 * bounded
+          : 1.055 * bounded ** (1 / 2.4) - 0.055;
+        return Math.round(srgb * 255);
+      }
+
+      const linearColors = Object.fromEntries(
+        colorOrder.map((key) => [
+          key,
+          colors[key].rgb.map(srgbToLinear)
+        ])
+      );
+
+      const maximumWhite = [0, 1, 2].map((channel) =>
+        colorOrder.reduce((sum, key) => sum + linearColors[key][channel], 0)
+      );
+
+      function reflectedRgb() {
+        if (state.lightType === "mono") {
+          const selected = colors[state.selectedColor];
+          const value = intensity(selected.wavelength);
+          return selected.rgb.map((channel) => Math.round(channel * value));
+        }
+
+        const linearMix = [0, 0, 0];
+        colorOrder.forEach((key) => {
+          const value = intensity(colors[key].wavelength);
+          linearColors[key].forEach((channel, index) => {
+            linearMix[index] += channel * value;
+          });
+        });
+
+        return linearMix.map((channel, index) =>
+          linearToSrgb(channel / maximumWhite[index])
+        );
+      }
+
+      function updateCrossSection() {
+        const top = 190;
+        const displayThickness = 4 + (state.thickness / 1000) * 220;
+        const bottom = top + displayThickness;
+        const turnTop = bottom - 10;
+        const turnBottom = bottom + 4;
+
+        filmRect.setAttribute("height", displayThickness.toFixed(2));
+        bottomBoundary.setAttribute("y1", bottom.toFixed(2));
+        bottomBoundary.setAttribute("y2", bottom.toFixed(2));
+
+        deepIncoming.setAttribute("y2", turnTop.toFixed(2));
+        deepReflected.setAttribute("y1", turnTop.toFixed(2));
+        deepTurn.setAttribute(
+          "d",
+          `M255 ${turnTop.toFixed(2)} C255 ${turnBottom.toFixed(2)} 285 ${turnBottom.toFixed(2)} 285 ${turnTop.toFixed(2)}`
+        );
+
+        thicknessArrow.setAttribute("y1", bottom.toFixed(2));
+        thicknessArrow.setAttribute("y2", top.toFixed(2));
+
+        const labelY = Math.min(410, Math.max(202, top + displayThickness / 2 + 5));
+        thicknessLabel.setAttribute("y", labelY.toFixed(2));
+        thicknessLabel.setAttribute(
+          "transform",
+          `rotate(-90 474 ${labelY.toFixed(2)})`
+        );
+        filmLabel.setAttribute("y", Math.min(bottom - 6, top + 26).toFixed(2));
+        lowerAirLabel.setAttribute("y", Math.min(532, bottom + 34).toFixed(2));
+      }
+
+      function updateDisplay() {
+        const rgb = reflectedRgb();
+        const cssColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+        const thicknessText = `${state.thickness} nm`;
+        const wavelengthText = state.lightType === "mono"
+          ? `${colors[state.selectedColor].wavelength} nm`
+          : whiteWavelengthText;
+
+        filmView.style.backgroundColor = cssColor;
+        filmView.setAttribute(
+          "aria-label",
+          `上から見た一様な薄膜。表示色は ${cssColor}`
+        );
+        thicknessValue.value = thicknessText;
+        indexValue.value = state.refractiveIndex.toFixed(2);
+        thicknessReadouts.forEach((element) => {
+          element.textContent = thicknessText;
+        });
+        wavelengthReadouts.forEach((element) => {
+          element.textContent = wavelengthText;
+        });
+        colorFieldset.disabled = state.lightType === "white";
+
+        updateCrossSection();
+      }
+
+      document.querySelectorAll('input[name="lightType"]').forEach((input) => {
+        input.addEventListener("change", (event) => {
+          state.lightType = event.target.value;
+          updateDisplay();
+        });
+      });
+
+      document.querySelectorAll('input[name="color"]').forEach((input) => {
+        input.addEventListener("change", (event) => {
+          state.selectedColor = event.target.value;
+          updateDisplay();
+        });
+      });
+
+      thicknessRange.addEventListener("input", () => {
+        state.thickness = Number(thicknessRange.value);
+        updateDisplay();
+      });
+
+      indexRange.addEventListener("input", () => {
+        state.refractiveIndex = Number(indexRange.value);
+        updateDisplay();
+      });
+
+      document.getElementById("resetButton").addEventListener("click", () => {
+        state.lightType = "mono";
+        state.selectedColor = "green";
+        state.thickness = 0;
+        state.refractiveIndex = 1.33;
+
+        document.querySelector('input[name="lightType"][value="mono"]').checked = true;
+        document.querySelector('input[name="color"][value="green"]').checked = true;
+        thicknessRange.value = "0";
+        indexRange.value = "1.33";
+        detailsPanel.open = false;
+        updateDisplay();
+      });
+
+      updateDisplay();
+    })();
+  </script>
+</body>
+</html>
