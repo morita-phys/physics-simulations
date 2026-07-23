@@ -1,0 +1,1783 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>実験グラフ作成ツール</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f5;
+      --panel: #ffffff;
+      --ink: #17212b;
+      --muted: #5b6875;
+      --line: #cbd4dc;
+      --line-strong: #81909d;
+      --primary: #176b87;
+      --primary-dark: #0f5269;
+      --point: #176b87;
+      --fit: #c94c3b;
+      --danger: #a52824;
+      --danger-bg: #fff0ef;
+      --focus: #0b78a1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Yu Gothic UI",
+        "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      font-size: 15px;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button,
+    input,
+    select {
+      min-height: 34px;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 5px 8px;
+    }
+
+    input:focus,
+    select:focus,
+    button:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 28%, transparent);
+      outline-offset: 1px;
+      border-color: var(--focus);
+    }
+
+    button {
+      padding: 5px 13px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover:not(:disabled) {
+      background: #edf5f8;
+      border-color: var(--primary);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+      color: #fff;
+    }
+
+    .app-header {
+      height: 50px;
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.18rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .app-main {
+      height: calc(100vh - 50px);
+      max-width: 100vw;
+      padding: 9px;
+      display: grid;
+      grid-template-columns: minmax(580px, 47%) minmax(0, 1fr);
+      gap: 9px;
+    }
+
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+
+    .input-panel {
+      padding: 9px;
+      display: grid;
+      grid-template-rows: auto auto minmax(145px, 1fr) auto auto;
+      gap: 7px;
+      overflow: hidden;
+    }
+
+    .field {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .field > label,
+    .section-label {
+      color: #33414d;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .axes-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .axis-box {
+      min-width: 0;
+      padding: 6px 7px;
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      column-gap: 6px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    .axis-box h2 {
+      margin: 12px 0 0;
+      align-self: start;
+      font-size: 0.9rem;
+    }
+
+    .axis-fields {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(130px, 1.5fr) minmax(64px, 0.65fr)
+        minmax(100px, 1fr) minmax(82px, 0.8fr);
+      gap: 5px;
+    }
+
+    .axis-row {
+      display: contents;
+    }
+
+    .axis-row.secondary {
+      display: contents;
+    }
+
+    .axis-row label {
+      display: grid;
+      gap: 2px;
+      align-content: start;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .axis-row input,
+    .axis-row select {
+      min-height: 32px;
+      padding: 4px 6px;
+    }
+
+    .axis-preview {
+      grid-column: 2;
+      min-height: 15px;
+      margin: 3px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 0.71rem;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .scale-note {
+      color: var(--muted);
+      font-size: 0.65rem;
+      font-weight: 400;
+      line-height: 1.15;
+    }
+
+    .scale-note[hidden] {
+      display: none;
+    }
+
+    .data-section {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 4px;
+    }
+
+    .data-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .data-heading small {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .table-wrap {
+      min-height: 0;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      height: 30px;
+      padding: 4px 7px;
+      background: #e8eef2;
+      border-bottom: 1px solid var(--line-strong);
+      color: #2d3c48;
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    th:first-child,
+    td:first-child {
+      width: 36px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    th + th,
+    td + td {
+      border-left: 1px solid var(--line);
+    }
+
+    td {
+      height: 32px;
+      padding: 0;
+      border-bottom: 1px solid #e5eaee;
+    }
+
+    td:first-child {
+      background: #f7f9fa;
+      font-size: 0.73rem;
+      user-select: none;
+    }
+
+    .data-cell {
+      width: 100%;
+      min-height: 31px;
+      padding: 3px 7px;
+      border: 0;
+      border-radius: 0;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .data-cell:focus {
+      position: relative;
+      z-index: 1;
+      outline-offset: -2px;
+    }
+
+    .data-cell.invalid {
+      background: var(--danger-bg);
+      box-shadow: inset 0 0 0 2px var(--danger);
+    }
+
+    .row-actions,
+    .bottom-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .row-actions button {
+      min-height: 32px;
+      padding-top: 3px;
+      padding-bottom: 3px;
+      font-size: 0.82rem;
+    }
+
+    .message {
+      min-height: 25px;
+      margin: 0;
+      padding: 3px 7px;
+      display: flex;
+      align-items: center;
+      border-radius: 4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.25;
+    }
+
+    .message.error {
+      background: var(--danger-bg);
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .graph-panel {
+      padding: 9px;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 7px;
+      overflow: hidden;
+    }
+
+    .graph-stage {
+      min-height: 0;
+      overflow: hidden;
+      background: #fff;
+      border: 0;
+      border-radius: 0;
+    }
+
+    #graph {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
+    }
+
+    .result-bar {
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 9px;
+      align-items: stretch;
+    }
+
+    .results {
+      min-width: 0;
+      padding: 7px 10px;
+      display: grid;
+      grid-template-columns: minmax(210px, 1.7fr) repeat(3, minmax(82px, 0.7fr));
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #f7f9fa;
+    }
+
+    .results[hidden] {
+      display: none;
+    }
+
+    .result-item {
+      min-width: 0;
+    }
+
+    .result-item .label {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .result-item .value {
+      display: block;
+      overflow: hidden;
+      font-size: 0.9rem;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .result-item.equation .value {
+      white-space: normal;
+    }
+
+    .axis-definition {
+      display: block;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 500;
+      line-height: 1.3;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .axis-definition[hidden] {
+      display: none;
+    }
+
+    .save-wrap {
+      display: flex;
+      align-items: stretch;
+    }
+
+    #saveButton {
+      min-width: 146px;
+    }
+
+    @media (max-width: 980px) {
+      html,
+      body {
+        height: auto;
+        min-height: 100%;
+        overflow: auto;
+      }
+
+      .app-main {
+        height: auto;
+        grid-template-columns: 1fr;
+      }
+
+      .input-panel {
+        height: 650px;
+      }
+
+      .graph-panel {
+        height: 640px;
+      }
+    }
+
+    @media (max-width: 580px) {
+      .app-main {
+        padding: 6px;
+      }
+
+      .axis-box {
+        grid-template-columns: 1fr;
+      }
+
+      .axis-box h2,
+      .axis-preview {
+        grid-column: 1;
+      }
+
+      .axis-box h2 {
+        margin: 0 0 4px;
+      }
+
+      .axis-fields {
+        grid-template-columns: 1fr;
+      }
+
+      .input-panel {
+        height: auto;
+        grid-template-rows: auto;
+        overflow: visible;
+      }
+
+      .table-wrap {
+        height: 300px;
+      }
+
+      .graph-panel {
+        height: 590px;
+      }
+
+      .results {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .result-bar {
+        grid-template-columns: 1fr;
+      }
+
+      #saveButton {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <h1>実験グラフ作成ツール</h1>
+    <button type="button" id="resetButton">リセット</button>
+  </header>
+
+  <main class="app-main">
+    <section class="panel input-panel" aria-label="グラフ設定とデータ入力">
+      <div class="field">
+        <label for="graphTitle">グラフタイトル</label>
+        <input id="graphTitle" type="text" autocomplete="off" placeholder="例：ばねの伸びと力の関係">
+      </div>
+
+      <div class="axes-grid">
+        <section class="axis-box" aria-labelledby="xAxisHeading">
+          <h2 id="xAxisHeading">x軸</h2>
+          <div class="axis-fields">
+            <div class="axis-row">
+              <label>物理量名
+                <input id="xName" type="text" autocomplete="off" placeholder="時間 t">
+              </label>
+              <label>単位
+                <input id="xUnit" type="text" autocomplete="off" placeholder="s">
+              </label>
+            </div>
+            <div class="axis-row secondary">
+              <label>変換
+                <select id="xTransform">
+                  <option value="none">変換なし</option>
+                  <option value="square">2乗</option>
+                  <option value="reciprocal">逆数</option>
+                  <option value="reciprocalSquare">逆2乗</option>
+                  <option value="ln">自然対数</option>
+                </select>
+              </label>
+              <label>目盛
+                <select id="xScale">
+                  <option value="linear">線形</option>
+                  <option value="log">対数</option>
+                </select>
+                <span class="scale-note" id="xScaleNote" hidden>変換時は線形目盛に固定</span>
+              </label>
+            </div>
+          </div>
+          <p class="axis-preview" id="xAxisPreview">表示：x</p>
+        </section>
+
+        <section class="axis-box" aria-labelledby="yAxisHeading">
+          <h2 id="yAxisHeading">y軸</h2>
+          <div class="axis-fields">
+            <div class="axis-row">
+              <label>物理量名
+                <input id="yName" type="text" autocomplete="off" placeholder="力 F">
+              </label>
+              <label>単位
+                <input id="yUnit" type="text" autocomplete="off" placeholder="N">
+              </label>
+            </div>
+            <div class="axis-row secondary">
+              <label>変換
+                <select id="yTransform">
+                  <option value="none">変換なし</option>
+                  <option value="square">2乗</option>
+                  <option value="reciprocal">逆数</option>
+                  <option value="reciprocalSquare">逆2乗</option>
+                  <option value="ln">自然対数</option>
+                </select>
+              </label>
+              <label>目盛
+                <select id="yScale">
+                  <option value="linear">線形</option>
+                  <option value="log">対数</option>
+                </select>
+                <span class="scale-note" id="yScaleNote" hidden>変換時は線形目盛に固定</span>
+              </label>
+            </div>
+          </div>
+          <p class="axis-preview" id="yAxisPreview">表示：y</p>
+        </section>
+      </div>
+
+      <section class="data-section" aria-labelledby="dataHeading">
+        <div class="data-heading">
+          <span class="section-label" id="dataHeading">データ入力</span>
+          <small>表計算ソフトから2列を貼り付けできます</small>
+        </div>
+        <div class="table-wrap" id="tableWrap">
+          <table aria-label="xとyの測定データ">
+            <thead>
+              <tr>
+                <th scope="col">No.</th>
+                <th scope="col" id="xColumnHeading">x</th>
+                <th scope="col" id="yColumnHeading">y</th>
+              </tr>
+            </thead>
+            <tbody id="dataBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="row-actions">
+        <button type="button" id="addRowsButton">行を追加</button>
+        <button type="button" id="clearDataButton">入力データを消去</button>
+      </div>
+
+      <p class="message" id="message" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel graph-panel" aria-label="グラフと近似結果">
+      <div class="graph-stage">
+        <svg id="graph" viewBox="0 0 900 610" role="img"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Yu Gothic UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif"
+          text-rendering="geometricPrecision" shape-rendering="geometricPrecision"
+          aria-labelledby="graphSvgTitle graphSvgDesc">
+          <title id="graphSvgTitle">実験データの散布図</title>
+          <desc id="graphSvgDesc">入力したxとyの測定値、および最小二乗法による近似直線を表示します。</desc>
+        </svg>
+      </div>
+
+      <div class="result-bar">
+        <section class="results" id="results" aria-label="近似結果" hidden>
+          <div class="result-item equation">
+            <span class="label">近似式</span>
+            <span class="axis-definition" id="xDefinitionValue" hidden></span>
+            <span class="axis-definition" id="yDefinitionValue" hidden></span>
+            <span class="value" id="equationValue"></span>
+            <span class="value" id="originalEquationValue"></span>
+          </div>
+          <div class="result-item">
+            <span class="label">傾き</span>
+            <span class="value" id="slopeValue"></span>
+          </div>
+          <div class="result-item">
+            <span class="label">切片</span>
+            <span class="value" id="interceptValue"></span>
+          </div>
+          <div class="result-item">
+            <span class="label">決定係数 R²</span>
+            <span class="value" id="r2Value"></span>
+          </div>
+        </section>
+        <div class="save-wrap">
+          <button type="button" class="primary" id="saveButton" disabled>グラフをPNGで保存</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const INITIAL_ROWS = 10;
+      const ROWS_TO_ADD = 5;
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const GRAPH = {
+        width: 900,
+        height: 610,
+        margin: { top: 62, right: 34, bottom: 82, left: 100 }
+      };
+
+      const elements = {
+        title: document.getElementById("graphTitle"),
+        xName: document.getElementById("xName"),
+        xUnit: document.getElementById("xUnit"),
+        xTransform: document.getElementById("xTransform"),
+        xScale: document.getElementById("xScale"),
+        xScaleNote: document.getElementById("xScaleNote"),
+        xPreview: document.getElementById("xAxisPreview"),
+        yName: document.getElementById("yName"),
+        yUnit: document.getElementById("yUnit"),
+        yTransform: document.getElementById("yTransform"),
+        yScale: document.getElementById("yScale"),
+        yScaleNote: document.getElementById("yScaleNote"),
+        yPreview: document.getElementById("yAxisPreview"),
+        xHeading: document.getElementById("xColumnHeading"),
+        yHeading: document.getElementById("yColumnHeading"),
+        dataBody: document.getElementById("dataBody"),
+        tableWrap: document.getElementById("tableWrap"),
+        message: document.getElementById("message"),
+        graph: document.getElementById("graph"),
+        results: document.getElementById("results"),
+        equation: document.getElementById("equationValue"),
+        originalEquation: document.getElementById("originalEquationValue"),
+        xDefinition: document.getElementById("xDefinitionValue"),
+        yDefinition: document.getElementById("yDefinitionValue"),
+        slope: document.getElementById("slopeValue"),
+        intercept: document.getElementById("interceptValue"),
+        r2: document.getElementById("r2Value"),
+        save: document.getElementById("saveButton"),
+        addRows: document.getElementById("addRowsButton"),
+        clearData: document.getElementById("clearDataButton"),
+        reset: document.getElementById("resetButton")
+      };
+
+      let debounceId = 0;
+      let currentModel = null;
+
+      function svgElement(name, attributes = {}, text = "") {
+        const node = document.createElementNS(SVG_NS, name);
+        Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+        if (text !== "") node.textContent = text;
+        return node;
+      }
+
+      function addRows(count, values = []) {
+        const startIndex = elements.dataBody.rows.length;
+        for (let i = 0; i < count; i += 1) {
+          const row = document.createElement("tr");
+          const numberCell = document.createElement("td");
+          numberCell.textContent = String(startIndex + i + 1);
+          row.appendChild(numberCell);
+
+          ["x", "y"].forEach((column, columnIndex) => {
+            const cell = document.createElement("td");
+            const input = document.createElement("input");
+            input.type = "text";
+            input.inputMode = "decimal";
+            input.autocomplete = "off";
+            input.className = "data-cell";
+            input.dataset.row = String(startIndex + i);
+            input.dataset.column = column;
+            input.setAttribute("aria-label", `${startIndex + i + 1}行目 ${column}`);
+            if (values[i] && values[i][columnIndex] !== undefined) {
+              input.value = values[i][columnIndex];
+            }
+            cell.appendChild(input);
+            row.appendChild(cell);
+          });
+          elements.dataBody.appendChild(row);
+        }
+      }
+
+      function allCells() {
+        return Array.from(elements.dataBody.querySelectorAll(".data-cell"));
+      }
+
+      function cellAt(row, columnIndex) {
+        return elements.dataBody.querySelector(
+          `.data-cell[data-row="${row}"][data-column="${columnIndex === 0 ? "x" : "y"}"]`
+        );
+      }
+
+      function updateDataIndices() {
+        Array.from(elements.dataBody.rows).forEach((row, rowIndex) => {
+          row.cells[0].textContent = String(rowIndex + 1);
+          row.querySelectorAll(".data-cell").forEach((input) => {
+            input.dataset.row = String(rowIndex);
+            input.setAttribute("aria-label", `${rowIndex + 1}行目 ${input.dataset.column}`);
+          });
+        });
+      }
+
+      function scheduleUpdate() {
+        window.clearTimeout(debounceId);
+        debounceId = window.setTimeout(update, 90);
+      }
+
+      function ensureTrailingRow(target) {
+        const row = Number(target.dataset.row);
+        if (row === elements.dataBody.rows.length - 1 && target.value.trim() !== "") {
+          addRows(1);
+        }
+      }
+
+      function handleCellInput(event) {
+        ensureTrailingRow(event.target);
+        scheduleUpdate();
+      }
+
+      function handleCellKeydown(event) {
+        const target = event.target;
+        if (!target.classList.contains("data-cell")) return;
+        const row = Number(target.dataset.row);
+        const column = target.dataset.column === "x" ? 0 : 1;
+        let nextRow = row;
+        let nextColumn = column;
+
+        if (event.key === "Enter") {
+          event.preventDefault();
+          nextRow = event.shiftKey ? row - 1 : row + 1;
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          nextRow = row - 1;
+        } else if (event.key === "ArrowDown") {
+          event.preventDefault();
+          nextRow = row + 1;
+        } else if (event.key === "ArrowLeft" && target.selectionStart === 0 && target.selectionEnd === 0) {
+          event.preventDefault();
+          nextColumn = column - 1;
+        } else if (
+          event.key === "ArrowRight" &&
+          target.selectionStart === target.value.length &&
+          target.selectionEnd === target.value.length
+        ) {
+          event.preventDefault();
+          nextColumn = column + 1;
+        } else {
+          return;
+        }
+
+        if (nextColumn < 0) {
+          nextColumn = 1;
+          nextRow -= 1;
+        } else if (nextColumn > 1) {
+          nextColumn = 0;
+          nextRow += 1;
+        }
+
+        if (nextRow >= elements.dataBody.rows.length) addRows(1);
+        const next = cellAt(Math.max(0, nextRow), nextColumn);
+        if (next) {
+          next.focus();
+          next.select();
+        }
+      }
+
+      function parsePastedText(text) {
+        const normalized = text.replace(/\r\n?/g, "\n");
+        const lines = normalized.split("\n");
+        while (lines.length && lines[lines.length - 1] === "") lines.pop();
+        return lines.map((line) => {
+          if (line.includes("\t")) return line.split("\t");
+          if (line.includes(",")) return line.split(",");
+          return [line];
+        });
+      }
+
+      function handlePaste(event) {
+        const target = event.target;
+        if (!target.classList.contains("data-cell")) return;
+        const text = event.clipboardData && event.clipboardData.getData("text");
+        if (!text || (!text.includes("\n") && !text.includes("\t") && !text.includes(","))) return;
+
+        event.preventDefault();
+        const grid = parsePastedText(text);
+        const startRow = Number(target.dataset.row);
+        const startColumn = target.dataset.column === "x" ? 0 : 1;
+        const requiredRows = startRow + grid.length;
+        if (requiredRows >= elements.dataBody.rows.length) {
+          addRows(requiredRows - elements.dataBody.rows.length + 1);
+        }
+
+        grid.forEach((sourceRow, rowOffset) => {
+          sourceRow.slice(0, 2).forEach((value, columnOffset) => {
+            const destinationColumn = startColumn + columnOffset;
+            if (destinationColumn > 1) return;
+            const destination = cellAt(startRow + rowOffset, destinationColumn);
+            if (destination) destination.value = value.trim();
+          });
+        });
+        update();
+      }
+
+      function usesValueTransforms() {
+        return elements.xTransform.value !== "none" || elements.yTransform.value !== "none";
+      }
+
+      function enforceScaleRules() {
+        const transformed = usesValueTransforms();
+        [elements.xScale, elements.yScale].forEach((scale) => {
+          if (transformed) scale.value = "linear";
+          scale.disabled = transformed;
+        });
+        elements.xScaleNote.hidden = !transformed;
+        elements.yScaleNote.hidden = !transformed;
+      }
+
+      function transformValue(value, transformation) {
+        switch (transformation) {
+          case "square":
+            return value * value;
+          case "reciprocal":
+            return 1 / value;
+          case "reciprocalSquare":
+            return 1 / (value * value);
+          case "ln":
+            return Math.log(value);
+          default:
+            return value;
+        }
+      }
+
+      function transformValueError(value, transformation) {
+        if (transformation === "reciprocal" && value === 0) {
+          return "逆数変換では0を使用できません。";
+        }
+        if (transformation === "reciprocalSquare" && value === 0) {
+          return "逆2乗変換では0を使用できません。";
+        }
+        if (transformation === "ln" && value <= 0) {
+          return "自然対数変換では0以下の値を使用できません。";
+        }
+        return "";
+      }
+
+      function parseData() {
+        const rows = [];
+        const invalidCells = [];
+        const incompleteCells = [];
+        const logCells = [];
+        const transformCells = [];
+        const transformMessages = [];
+        let hasAnyInput = false;
+
+        Array.from(elements.dataBody.rows).forEach((row) => {
+          const xInput = row.querySelector('[data-column="x"]');
+          const yInput = row.querySelector('[data-column="y"]');
+          const xText = xInput.value.trim();
+          const yText = yInput.value.trim();
+          if (xText !== "" || yText !== "") hasAnyInput = true;
+          if (xText === "" && yText === "") return;
+
+          if (xText === "" || yText === "") {
+            incompleteCells.push(xText === "" ? xInput : yInput);
+            return;
+          }
+
+          const x = Number(xText);
+          const y = Number(yText);
+          let rowInvalid = false;
+          if (!Number.isFinite(x)) {
+            invalidCells.push(xInput);
+            rowInvalid = true;
+          }
+          if (!Number.isFinite(y)) {
+            invalidCells.push(yInput);
+            rowInvalid = true;
+          }
+          if (rowInvalid) return;
+
+          const xTransformError = transformValueError(x, elements.xTransform.value);
+          const yTransformError = transformValueError(y, elements.yTransform.value);
+          if (xTransformError) {
+            transformCells.push(xInput);
+            transformMessages.push(xTransformError);
+            rowInvalid = true;
+          }
+          if (yTransformError) {
+            transformCells.push(yInput);
+            transformMessages.push(yTransformError);
+            rowInvalid = true;
+          }
+          if (rowInvalid) return;
+
+          const X = transformValue(x, elements.xTransform.value);
+          const Y = transformValue(y, elements.yTransform.value);
+          if (!Number.isFinite(X)) {
+            transformCells.push(xInput);
+            transformMessages.push("x軸の変換後の値を計算できません。");
+            rowInvalid = true;
+          }
+          if (!Number.isFinite(Y)) {
+            transformCells.push(yInput);
+            transformMessages.push("y軸の変換後の値を計算できません。");
+            rowInvalid = true;
+          }
+          if (rowInvalid) return;
+
+          if (elements.xScale.value === "log" && X <= 0) logCells.push(xInput);
+          if (elements.yScale.value === "log" && Y <= 0) logCells.push(yInput);
+          rows.push({ x: X, y: Y, rawX: x, rawY: y, xInput, yInput });
+        });
+
+        return {
+          rows,
+          invalidCells,
+          incompleteCells,
+          logCells,
+          transformCells,
+          transformMessages: [...new Set(transformMessages)],
+          hasAnyInput
+        };
+      }
+
+      function regression(points, xLog, yLog) {
+        const transformed = points.map((point) => ({
+          X: xLog ? Math.log10(point.x) : point.x,
+          Y: yLog ? Math.log10(point.y) : point.y
+        }));
+        const n = transformed.length;
+        const meanX = transformed.reduce((sum, point) => sum + point.X, 0) / n;
+        const meanY = transformed.reduce((sum, point) => sum + point.Y, 0) / n;
+        let sxx = 0;
+        let sxy = 0;
+        let syy = 0;
+        transformed.forEach((point) => {
+          const dx = point.X - meanX;
+          const dy = point.Y - meanY;
+          sxx += dx * dx;
+          sxy += dx * dy;
+          syy += dy * dy;
+        });
+        if (!Number.isFinite(sxx) || sxx === 0) {
+          return { error: "xの値がすべて同じため、近似計算ができません。" };
+        }
+        const a = sxy / sxx;
+        const b = meanY - a * meanX;
+        let residual = 0;
+        transformed.forEach((point) => {
+          const difference = point.Y - (a * point.X + b);
+          residual += difference * difference;
+        });
+        const r2 = syy === 0
+          ? null
+          : Math.max(0, Math.min(1, 1 - residual / syy));
+        if (![a, b].every(Number.isFinite)) {
+          return { error: "近似計算を実行できません。入力値を確認してください。" };
+        }
+        return { a, b, r2 };
+      }
+
+      function niceNumber(value, round) {
+        if (!Number.isFinite(value) || value <= 0) return 1;
+        const exponent = Math.floor(Math.log10(value));
+        const fraction = value / 10 ** exponent;
+        let niceFraction;
+        if (round) {
+          if (fraction < 1.5) niceFraction = 1;
+          else if (fraction < 3) niceFraction = 2;
+          else if (fraction < 7) niceFraction = 5;
+          else niceFraction = 10;
+        } else {
+          if (fraction <= 1) niceFraction = 1;
+          else if (fraction <= 2) niceFraction = 2;
+          else if (fraction <= 5) niceFraction = 5;
+          else niceFraction = 10;
+        }
+        return niceFraction * 10 ** exponent;
+      }
+
+      function linearAxis(values) {
+        let min = Math.min(...values);
+        let max = Math.max(...values);
+        if (min === max) {
+          const halfWidth = niceNumber(Math.max(Math.abs(min) * 0.2, 1), false);
+          min -= halfWidth;
+          max += halfWidth;
+        }
+        const range = max - min;
+        const paddedMin = min - range * 0.08;
+        const paddedMax = max + range * 0.08;
+        const step = niceNumber((paddedMax - paddedMin) / 6, true);
+        let axisMin = Math.floor(paddedMin / step) * step;
+        let axisMax = Math.ceil(paddedMax / step) * step;
+
+        if (min >= 0 && axisMin < 0 && Math.abs(axisMin) <= range * 0.35) axisMin = 0;
+        if (max <= 0 && axisMax > 0 && Math.abs(axisMax) <= range * 0.35) axisMax = 0;
+        if (axisMin === axisMax) axisMax = axisMin + step;
+
+        const ticks = [];
+        const count = Math.round((axisMax - axisMin) / step);
+        for (let i = 0; i <= count; i += 1) {
+          const value = axisMin + i * step;
+          ticks.push({ value, t: value, major: true, label: formatTick(value, step) });
+        }
+        return { min: axisMin, max: axisMax, tMin: axisMin, tMax: axisMax, ticks, scale: "linear" };
+      }
+
+      function logAxis(values) {
+        const minExponent = Math.floor(Math.log10(Math.min(...values)));
+        let maxExponent = Math.ceil(Math.log10(Math.max(...values)));
+        if (maxExponent === minExponent) maxExponent += 1;
+        const ticks = [];
+        for (let exponent = minExponent; exponent <= maxExponent; exponent += 1) {
+          ticks.push({
+            value: 10 ** exponent,
+            t: exponent,
+            major: true,
+            label: `10${toSuperscript(exponent)}`
+          });
+          if (exponent < maxExponent) {
+            [2, 3, 5].forEach((factor) => {
+              ticks.push({
+                value: factor * 10 ** exponent,
+                t: exponent + Math.log10(factor),
+                major: false,
+                label: ""
+              });
+            });
+          }
+        }
+        return {
+          min: 10 ** minExponent,
+          max: 10 ** maxExponent,
+          tMin: minExponent,
+          tMax: maxExponent,
+          ticks,
+          scale: "log"
+        };
+      }
+
+      function makeAxis(values, scale) {
+        return scale === "log" ? logAxis(values) : linearAxis(values);
+      }
+
+      function toSuperscript(value) {
+        const map = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+          "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+        return String(value).split("").map((character) => map[character] || character).join("");
+      }
+
+      function formatTick(value, step) {
+        if (Object.is(value, -0) || Math.abs(value) < Math.abs(step) * 1e-9) return "0";
+        const abs = Math.abs(value);
+        if (abs >= 1e5 || abs < 1e-3) return value.toExponential(1).replace("e+", "e");
+        const decimals = Math.max(0, -Math.floor(Math.log10(Math.abs(step))) + (step / 10 ** Math.floor(Math.log10(Math.abs(step))) < 2 ? 1 : 0));
+        return Number(value.toFixed(Math.min(decimals, 10))).toString();
+      }
+
+      function formatNumber(value) {
+        if (value === null || !Number.isFinite(value)) return "—";
+        if (value === 0) return "0";
+        const abs = Math.abs(value);
+        if (abs >= 1e5 || abs < 1e-3) {
+          const [coefficient, exponent] = value.toExponential(3).split("e");
+          return `${Number(coefficient)} × 10${toSuperscript(Number(exponent))}`;
+        }
+        return Number(value.toPrecision(4)).toString();
+      }
+
+      function compactNumber(value) {
+        if (!Number.isFinite(value)) return "—";
+        if (value === 0) return "0";
+        const abs = Math.abs(value);
+        return abs >= 1e5 || abs < 1e-3
+          ? value.toExponential(3).replace("e+", "e")
+          : Number(value.toPrecision(4)).toString();
+      }
+
+      function signedTerm(value) {
+        return value < 0 ? ` − ${compactNumber(Math.abs(value))}` : ` + ${compactNumber(value)}`;
+      }
+
+      function equations(fit, xLog, yLog, valueTransforms = false) {
+        const a = compactNumber(fit.a);
+        const bTerm = signedTerm(fit.b);
+        if (valueTransforms) {
+          return { transformed: `Y = ${a}X${bTerm}`, original: "" };
+        }
+        if (!xLog && !yLog) {
+          return { transformed: `y = ${a}x${bTerm}`, original: "" };
+        }
+        if (xLog && !yLog) {
+          return { transformed: `y = ${a} log₁₀x${bTerm}`, original: "" };
+        }
+        const coefficient = compactNumber(10 ** fit.b);
+        if (!xLog && yLog) {
+          return {
+            transformed: `log₁₀y = ${a}x${bTerm}`,
+            original: `y = ${coefficient} × 10^(${a}x)`
+          };
+        }
+        return {
+          transformed: `log₁₀y = ${a} log₁₀x${bTerm}`,
+          original: `y = ${coefficient}x^${a}`
+        };
+      }
+
+      function groupedUnit(unit) {
+        const cleanUnit = unit.trim();
+        if (!cleanUnit) return "";
+        const simpleUnit = /^[A-Za-zµμΩ°%]+$/.test(cleanUnit);
+        return simpleUnit || (cleanUnit.startsWith("(") && cleanUnit.endsWith(")"))
+          ? cleanUnit
+          : `(${cleanUnit})`;
+      }
+
+      function poweredUnit(unit, exponent) {
+        const unitBase = groupedUnit(unit);
+        return unitBase ? `${unitBase}${toSuperscript(exponent)}` : "";
+      }
+
+      function quantityDefinition(name, transformation, fallback) {
+        const cleanName = name.trim() || fallback;
+        switch (transformation) {
+          case "square":
+            return `(${cleanName})²`;
+          case "reciprocal":
+            return `1/(${cleanName})`;
+          case "reciprocalSquare":
+            return `1/(${cleanName})²`;
+          case "ln":
+            return `ln(${cleanName})`;
+          default:
+            return cleanName;
+        }
+      }
+
+      function transformedAxisLabel(name, unit, transformation, fallback) {
+        const quantity = quantityDefinition(name, transformation, fallback);
+        const cleanUnit = unit.trim();
+        if (transformation === "ln" || !cleanUnit) return quantity;
+        if (transformation === "square") return `${quantity} / ${poweredUnit(cleanUnit, 2)}`;
+        if (transformation === "reciprocal") return `${quantity} / ${poweredUnit(cleanUnit, -1)}`;
+        if (transformation === "reciprocalSquare") return `${quantity} / ${poweredUnit(cleanUnit, -2)}`;
+        return `${quantity} / ${groupedUnit(cleanUnit)}`;
+      }
+
+      function updateAxisPreviews() {
+        elements.xPreview.textContent = `表示：${transformedAxisLabel(
+          elements.xName.value, elements.xUnit.value, elements.xTransform.value, "x"
+        )}`;
+        elements.yPreview.textContent = `表示：${transformedAxisLabel(
+          elements.yName.value, elements.yUnit.value, elements.yTransform.value, "y"
+        )}`;
+      }
+
+      function createModel(points, fit) {
+        const xLog = elements.xScale.value === "log";
+        const yLog = elements.yScale.value === "log";
+        const valueTransforms = usesValueTransforms();
+        return {
+          points,
+          fit,
+          xLog,
+          yLog,
+          valueTransforms,
+          xAxis: makeAxis(points.map((point) => point.x), elements.xScale.value),
+          yAxis: makeAxis(points.map((point) => point.y), elements.yScale.value),
+          title: elements.title.value.trim(),
+          xLabel: transformedAxisLabel(
+            elements.xName.value, elements.xUnit.value, elements.xTransform.value, "x"
+          ),
+          yLabel: transformedAxisLabel(
+            elements.yName.value, elements.yUnit.value, elements.yTransform.value, "y"
+          ),
+          xDefinition: quantityDefinition(elements.xName.value, elements.xTransform.value, "x"),
+          yDefinition: quantityDefinition(elements.yName.value, elements.yTransform.value, "y"),
+          equations: equations(fit, xLog, yLog, valueTransforms)
+        };
+      }
+
+      function clearSvg() {
+        while (elements.graph.firstChild) elements.graph.removeChild(elements.graph.firstChild);
+        elements.graph.appendChild(svgElement("title", { id: "graphSvgTitle" }, "実験データの散布図"));
+        elements.graph.appendChild(svgElement("desc", { id: "graphSvgDesc" },
+          "入力したxとyの測定値、および最小二乗法による近似直線を表示します。"));
+      }
+
+      function drawEmptyGraph() {
+        clearSvg();
+        const { width, height, margin } = GRAPH;
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        elements.graph.appendChild(svgElement("rect", {
+          x: 0, y: 0, width, height, fill: "#ffffff"
+        }));
+        elements.graph.appendChild(svgElement("rect", {
+          x: margin.left, y: margin.top, width: plotWidth, height: plotHeight,
+          fill: "#ffffff", stroke: "#3f454a", "stroke-width": 1.25
+        }));
+        const titleText = elements.title.value.trim();
+        if (titleText) {
+          elements.graph.appendChild(svgElement("text", {
+            x: width / 2, y: 34, "text-anchor": "middle", fill: "#202428",
+            "font-size": 20, "font-weight": 500
+          }, titleText));
+        }
+        elements.graph.appendChild(svgElement("text", {
+          x: width / 2, y: margin.top + plotHeight / 2,
+          "text-anchor": "middle", fill: "#62686d", "font-size": 15
+        }, "データを入力してください"));
+        drawAxisLabels(
+          transformedAxisLabel(
+            elements.xName.value, elements.xUnit.value, elements.xTransform.value, "x"
+          ),
+          transformedAxisLabel(
+            elements.yName.value, elements.yUnit.value, elements.yTransform.value, "y"
+          )
+        );
+      }
+
+      function drawAxisLabels(xLabel, yLabel) {
+        const { width, height, margin } = GRAPH;
+        elements.graph.appendChild(svgElement("text", {
+          x: margin.left + (width - margin.left - margin.right) / 2,
+          y: height - 22,
+          "text-anchor": "middle",
+          fill: "#202428",
+          "font-size": 16
+        }, xLabel));
+        const yCenter = margin.top + (height - margin.top - margin.bottom) / 2;
+        elements.graph.appendChild(svgElement("text", {
+          x: 27,
+          y: yCenter,
+          transform: `rotate(-90 27 ${yCenter})`,
+          "text-anchor": "middle",
+          fill: "#202428",
+          "font-size": 16
+        }, yLabel));
+      }
+
+      function chooseAnnotationPosition(model, mapX, mapY, mapXT, mapYT, bounds, boxWidth, boxHeight) {
+        const inset = 12;
+        const candidates = [
+          { x: bounds.right - boxWidth - inset, y: bounds.top + inset },
+          { x: bounds.left + inset, y: bounds.top + inset },
+          { x: bounds.right - boxWidth - inset, y: bounds.bottom - boxHeight - inset },
+          { x: bounds.left + inset, y: bounds.bottom - boxHeight - inset }
+        ];
+        const pointPositions = model.points.map((point) => ({ x: mapX(point.x), y: mapY(point.y) }));
+        const linePositions = [];
+        for (let index = 0; index <= 32; index += 1) {
+          const x = model.xAxis.tMin +
+            (model.xAxis.tMax - model.xAxis.tMin) * index / 32;
+          const y = model.fit.a * x + model.fit.b;
+          if (y >= model.yAxis.tMin && y <= model.yAxis.tMax) {
+            linePositions.push({ x: mapXT(x), y: mapYT(y) });
+          }
+        }
+
+        function score(candidate, candidateIndex) {
+          const expanded = {
+            left: candidate.x - 8,
+            right: candidate.x + boxWidth + 8,
+            top: candidate.y - 8,
+            bottom: candidate.y + boxHeight + 8
+          };
+          let total = candidateIndex * 0.01;
+          pointPositions.forEach((point) => {
+            if (
+              point.x >= expanded.left && point.x <= expanded.right &&
+              point.y >= expanded.top && point.y <= expanded.bottom
+            ) {
+              total += 100;
+            }
+          });
+          linePositions.forEach((point) => {
+            if (
+              point.x >= expanded.left && point.x <= expanded.right &&
+              point.y >= expanded.top && point.y <= expanded.bottom
+            ) {
+              total += 4;
+            }
+          });
+          return total;
+        }
+
+        return candidates.reduce((best, candidate, index) => {
+          const candidateScore = score(candidate, index);
+          return candidateScore < best.score ? { ...candidate, score: candidateScore } : best;
+        }, { ...candidates[0], score: score(candidates[0], 0) });
+      }
+
+      function drawGraph(model, showFit = true) {
+        clearSvg();
+        const { width, height, margin } = GRAPH;
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        const plotRight = margin.left + plotWidth;
+        const plotBottom = margin.top + plotHeight;
+        const xTransform = (value) => model.xLog ? Math.log10(value) : value;
+        const yTransform = (value) => model.yLog ? Math.log10(value) : value;
+        const mapX = (value) => margin.left +
+          ((xTransform(value) - model.xAxis.tMin) / (model.xAxis.tMax - model.xAxis.tMin)) * plotWidth;
+        const mapY = (value) => plotBottom -
+          ((yTransform(value) - model.yAxis.tMin) / (model.yAxis.tMax - model.yAxis.tMin)) * plotHeight;
+        const mapXT = (value) => margin.left +
+          ((value - model.xAxis.tMin) / (model.xAxis.tMax - model.xAxis.tMin)) * plotWidth;
+        const mapYT = (value) => plotBottom -
+          ((value - model.yAxis.tMin) / (model.yAxis.tMax - model.yAxis.tMin)) * plotHeight;
+
+        elements.graph.appendChild(svgElement("rect", { x: 0, y: 0, width, height, fill: "#ffffff" }));
+
+        if (model.title) {
+          elements.graph.appendChild(svgElement("text", {
+            x: width / 2, y: 34, "text-anchor": "middle", fill: "#202428",
+            "font-size": 20, "font-weight": 500
+          }, model.title));
+        }
+
+        elements.graph.appendChild(svgElement("rect", {
+          x: margin.left, y: margin.top, width: plotWidth, height: plotHeight, fill: "#ffffff"
+        }));
+
+        model.xAxis.ticks.forEach((tick) => {
+          const x = mapXT(tick.t);
+          elements.graph.appendChild(svgElement("line", {
+            x1: x, y1: margin.top, x2: x, y2: plotBottom,
+            stroke: tick.major ? "#d9dde0" : "#eff1f2",
+            "stroke-width": tick.major ? 0.8 : 0.55
+          }));
+          if (tick.major) {
+            elements.graph.appendChild(svgElement("line", {
+              x1: x, y1: plotBottom, x2: x, y2: plotBottom + 6,
+              stroke: "#3f454a", "stroke-width": 1.1
+            }));
+            elements.graph.appendChild(svgElement("text", {
+              x, y: plotBottom + 23, "text-anchor": "middle",
+              fill: "#252a2e", "font-size": 13
+            }, tick.label));
+          } else if (model.xLog) {
+            elements.graph.appendChild(svgElement("line", {
+              x1: x, y1: plotBottom, x2: x, y2: plotBottom + 3,
+              stroke: "#3f454a", "stroke-width": 0.9
+            }));
+          }
+        });
+
+        model.yAxis.ticks.forEach((tick) => {
+          const y = mapYT(tick.t);
+          elements.graph.appendChild(svgElement("line", {
+            x1: margin.left, y1: y, x2: plotRight, y2: y,
+            stroke: tick.major ? "#d9dde0" : "#eff1f2",
+            "stroke-width": tick.major ? 0.8 : 0.55
+          }));
+          if (tick.major) {
+            elements.graph.appendChild(svgElement("line", {
+              x1: margin.left - 6, y1: y, x2: margin.left, y2: y,
+              stroke: "#3f454a", "stroke-width": 1.1
+            }));
+            elements.graph.appendChild(svgElement("text", {
+              x: margin.left - 10, y: y + 4.5, "text-anchor": "end",
+              fill: "#252a2e", "font-size": 13
+            }, tick.label));
+          } else if (model.yLog) {
+            elements.graph.appendChild(svgElement("line", {
+              x1: margin.left - 3, y1: y, x2: margin.left, y2: y,
+              stroke: "#3f454a", "stroke-width": 0.9
+            }));
+          }
+        });
+
+        elements.graph.appendChild(svgElement("rect", {
+          x: margin.left, y: margin.top, width: plotWidth, height: plotHeight,
+          fill: "none", stroke: "#3f454a", "stroke-width": 1.25
+        }));
+
+        if (showFit) {
+          const lineY1 = model.fit.a * model.xAxis.tMin + model.fit.b;
+          const lineY2 = model.fit.a * model.xAxis.tMax + model.fit.b;
+          const clipped = clipLineToRect(
+            model.xAxis.tMin, lineY1, model.xAxis.tMax, lineY2,
+            model.xAxis.tMin, model.xAxis.tMax, model.yAxis.tMin, model.yAxis.tMax
+          );
+          if (clipped) {
+            elements.graph.appendChild(svgElement("line", {
+              x1: mapXT(clipped.x1), y1: mapYT(clipped.y1),
+              x2: mapXT(clipped.x2), y2: mapYT(clipped.y2),
+              stroke: "#b23a3a", "stroke-width": 1.8
+            }));
+          }
+        }
+
+        model.points.forEach((point) => {
+          elements.graph.appendChild(svgElement("circle", {
+            cx: mapX(point.x), cy: mapY(point.y), r: 4,
+            fill: "#1f5a92", stroke: "#17466f", "stroke-width": 0.8
+          }));
+        });
+
+        if (showFit) {
+          const annotationLines = [
+            model.equations.transformed,
+            ...(model.equations.original ? [model.equations.original] : []),
+            `R² = ${formatNumber(model.fit.r2)}`
+          ];
+          const longestLine = Math.max(...annotationLines.map((line) => Array.from(line).length));
+          const boxWidth = Math.min(360, Math.max(148, longestLine * 7.8 + 20));
+          const boxHeight = annotationLines.length * 19 + 12;
+          const position = chooseAnnotationPosition(
+            model, mapX, mapY, mapXT, mapYT,
+            { left: margin.left, right: plotRight, top: margin.top, bottom: plotBottom },
+            boxWidth, boxHeight
+          );
+          elements.graph.appendChild(svgElement("rect", {
+            x: position.x, y: position.y, width: boxWidth, height: boxHeight,
+            fill: "#ffffff", "fill-opacity": 0.93,
+            stroke: "#6b7074", "stroke-width": 0.75
+          }));
+          annotationLines.forEach((line, index) => {
+            elements.graph.appendChild(svgElement("text", {
+              x: position.x + 10,
+              y: position.y + 20 + index * 19,
+              fill: "#252a2e", "font-size": 14, "font-weight": 400
+            }, line));
+          });
+        }
+
+        drawAxisLabels(model.xLabel, model.yLabel);
+      }
+
+      function clipLineToRect(x1, y1, x2, y2, xmin, xmax, ymin, ymax) {
+        let t0 = 0;
+        let t1 = 1;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const checks = [
+          [-dx, x1 - xmin],
+          [dx, xmax - x1],
+          [-dy, y1 - ymin],
+          [dy, ymax - y1]
+        ];
+        for (const [p, q] of checks) {
+          if (p === 0 && q < 0) return null;
+          if (p !== 0) {
+            const ratio = q / p;
+            if (p < 0) {
+              if (ratio > t1) return null;
+              if (ratio > t0) t0 = ratio;
+            } else {
+              if (ratio < t0) return null;
+              if (ratio < t1) t1 = ratio;
+            }
+          }
+        }
+        return {
+          x1: x1 + t0 * dx,
+          y1: y1 + t0 * dy,
+          x2: x1 + t1 * dx,
+          y2: y1 + t1 * dy
+        };
+      }
+
+      function setMessage(text, isError = false) {
+        elements.message.textContent = text;
+        elements.message.classList.toggle("error", isError);
+      }
+
+      function clearCellErrors() {
+        allCells().forEach((cell) => {
+          cell.classList.remove("invalid");
+          cell.removeAttribute("aria-invalid");
+        });
+      }
+
+      function markInvalid(cells) {
+        cells.forEach((cell) => {
+          cell.classList.add("invalid");
+          cell.setAttribute("aria-invalid", "true");
+        });
+      }
+
+      function hideResults() {
+        elements.results.hidden = true;
+        elements.save.disabled = true;
+        currentModel = null;
+      }
+
+      function updateHeadings() {
+        elements.xHeading.textContent = elements.xName.value.trim() || "x";
+        elements.yHeading.textContent = elements.yName.value.trim() || "y";
+      }
+
+      function update() {
+        clearCellErrors();
+        updateHeadings();
+        updateAxisPreviews();
+        const parsed = parseData();
+        hideResults();
+
+        if (parsed.invalidCells.length) {
+          markInvalid(parsed.invalidCells);
+          setMessage("数値として読み取れないセルがあります。入力値を確認してください。", true);
+          drawEmptyGraph();
+          return;
+        }
+        if (parsed.transformCells.length) {
+          markInvalid(parsed.transformCells);
+          setMessage(parsed.transformMessages.join(" "), true);
+          drawEmptyGraph();
+          return;
+        }
+        if (parsed.logCells.length) {
+          markInvalid(parsed.logCells);
+          setMessage("対数軸では0以下の値を使用できません。線形軸へ戻すか、値を修正してください。", true);
+          drawEmptyGraph();
+          return;
+        }
+        if (parsed.incompleteCells.length) {
+          markInvalid(parsed.incompleteCells);
+          setMessage("xとyの片方が空欄の行は計算に使用されません。");
+        } else if (!parsed.hasAnyInput) {
+          setMessage("");
+        } else if (parsed.rows.length < 2) {
+          setMessage("近似には有効なデータが2組以上必要です。", true);
+        } else {
+          setMessage(`${parsed.rows.length}組のデータを使用しています。`);
+        }
+
+        if (parsed.rows.length === 0) {
+          drawEmptyGraph();
+          return;
+        }
+
+        if (parsed.rows.length < 2) {
+          drawPointsWithoutFit(parsed.rows);
+          return;
+        }
+
+        const fit = regression(
+          parsed.rows,
+          elements.xScale.value === "log",
+          elements.yScale.value === "log"
+        );
+        if (fit.error) {
+          setMessage(fit.error, true);
+          drawPointsWithoutFit(parsed.rows);
+          return;
+        }
+
+        const model = createModel(parsed.rows, fit);
+        currentModel = model;
+        drawGraph(model);
+        elements.equation.textContent = model.equations.transformed;
+        elements.originalEquation.textContent = model.equations.original;
+        elements.originalEquation.hidden = !model.equations.original;
+        elements.xDefinition.textContent = `横軸 X：${model.xDefinition}`;
+        elements.yDefinition.textContent = `縦軸 Y：${model.yDefinition}`;
+        elements.xDefinition.hidden = !model.valueTransforms;
+        elements.yDefinition.hidden = !model.valueTransforms;
+        elements.slope.textContent = formatNumber(fit.a);
+        elements.intercept.textContent = formatNumber(fit.b);
+        elements.r2.textContent = formatNumber(fit.r2);
+        elements.results.hidden = false;
+        elements.save.disabled = false;
+      }
+
+      function drawPointsWithoutFit(points) {
+        if (!points.length) {
+          drawEmptyGraph();
+          return;
+        }
+        const xLog = elements.xScale.value === "log";
+        const yLog = elements.yScale.value === "log";
+        const safePoints = points.filter((point) => (!xLog || point.x > 0) && (!yLog || point.y > 0));
+        if (!safePoints.length) {
+          drawEmptyGraph();
+          return;
+        }
+        const temporaryFit = { a: 0, b: 0, r2: null };
+        const model = createModel(safePoints, temporaryFit);
+        drawGraph({ ...model, fit: temporaryFit, equations: { transformed: "", original: "" } }, false);
+      }
+
+      async function savePng() {
+        if (!currentModel || elements.save.disabled) return;
+        elements.save.disabled = true;
+        const previousText = elements.save.textContent;
+        elements.save.textContent = "画像を作成中…";
+        try {
+          const clone = elements.graph.cloneNode(true);
+          clone.setAttribute("width", String(GRAPH.width));
+          clone.setAttribute("height", String(GRAPH.height));
+          clone.setAttribute("xmlns", SVG_NS);
+          const serialized = new XMLSerializer().serializeToString(clone);
+          const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const image = new Image();
+          await new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = reject;
+            image.src = url;
+          });
+          const scale = 2;
+          const canvas = document.createElement("canvas");
+          canvas.width = GRAPH.width * scale;
+          canvas.height = GRAPH.height * scale;
+          const context = canvas.getContext("2d");
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          const pngBlob = await new Promise((resolve, reject) => {
+            canvas.toBlob((result) => result ? resolve(result) : reject(new Error("PNG変換失敗")), "image/png");
+          });
+          const downloadUrl = URL.createObjectURL(pngBlob);
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.download = makeFileName(elements.title.value);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+          setMessage("グラフをPNG画像として保存しました。");
+        } catch (error) {
+          console.error(error);
+          setMessage("PNG画像を生成できませんでした。もう一度お試しください。", true);
+        } finally {
+          elements.save.textContent = previousText;
+          elements.save.disabled = !currentModel;
+        }
+      }
+
+      function makeFileName(title) {
+        const base = title.trim() || "実験グラフ";
+        const sanitized = base
+          .replace(/[\\/:*?"<>|]/g, "_")
+          .replace(/[.\s]+$/g, "")
+          .slice(0, 80);
+        return `${sanitized || "実験グラフ"}.png`;
+      }
+
+      function clearData() {
+        allCells().forEach((cell) => { cell.value = ""; });
+        while (elements.dataBody.rows.length > INITIAL_ROWS) {
+          elements.dataBody.deleteRow(elements.dataBody.rows.length - 1);
+        }
+        updateDataIndices();
+        update();
+        const first = cellAt(0, 0);
+        if (first) first.focus();
+      }
+
+      function hasEnteredData() {
+        return allCells().some((cell) => cell.value.trim() !== "");
+      }
+
+      function handleTransformChange() {
+        enforceScaleRules();
+        update();
+      }
+
+      function resetAll() {
+        if (hasEnteredData() && !window.confirm("入力したデータと設定をすべてリセットしますか？")) return;
+        [elements.title, elements.xName, elements.xUnit, elements.yName, elements.yUnit]
+          .forEach((input) => { input.value = ""; });
+        elements.xTransform.value = "none";
+        elements.yTransform.value = "none";
+        elements.xScale.value = "linear";
+        elements.yScale.value = "linear";
+        enforceScaleRules();
+        allCells().forEach((cell) => { cell.value = ""; });
+        while (elements.dataBody.rows.length > INITIAL_ROWS) {
+          elements.dataBody.deleteRow(elements.dataBody.rows.length - 1);
+        }
+        updateDataIndices();
+        update();
+        elements.title.focus();
+      }
+
+      elements.dataBody.addEventListener("input", handleCellInput);
+      elements.dataBody.addEventListener("keydown", handleCellKeydown);
+      elements.dataBody.addEventListener("paste", handlePaste);
+      [elements.title, elements.xName, elements.xUnit, elements.yName, elements.yUnit]
+        .forEach((input) => input.addEventListener("input", scheduleUpdate));
+      [elements.xTransform, elements.yTransform]
+        .forEach((select) => select.addEventListener("change", handleTransformChange));
+      [elements.xScale, elements.yScale].forEach((select) => select.addEventListener("change", update));
+      elements.addRows.addEventListener("click", () => {
+        addRows(ROWS_TO_ADD);
+        cellAt(elements.dataBody.rows.length - ROWS_TO_ADD, 0).focus();
+      });
+      elements.clearData.addEventListener("click", clearData);
+      elements.reset.addEventListener("click", resetAll);
+      elements.save.addEventListener("click", savePng);
+
+      enforceScaleRules();
+      addRows(INITIAL_ROWS);
+      update();
+    })();
+  </script>
+</body>
+</html>

@@ -50,6 +50,10 @@
       letter-spacing: 0;
     }
 
+    .content-group + .content-group {
+      margin-top: 28px;
+    }
+
     .materials {
       display: flex;
       flex-direction: column;
@@ -118,26 +122,39 @@
     </header>
 
     <main>
-      <h2>教材一覧</h2>
-      <ul class="materials">
-        <li class="material">
-          <p class="material-title">摩擦角</p>
-          <p class="material-note">斜面上の物体にはたらく摩擦力と滑り出す角度を観察します。</p>
-          <a class="open-link" href="simulations/01_friction_angle/index.html">開く</a>
-        </li>
+      <section class="content-group">
+        <h2>教材一覧</h2>
+        <ul class="materials">
+          <li class="material">
+            <p class="material-title">摩擦角</p>
+            <p class="material-note">斜面上の物体にはたらく摩擦力と滑り出す角度を観察します。</p>
+            <a class="open-link" href="simulations/01_friction_angle/index.html">開く</a>
+          </li>
 
-        <li class="material">
-          <p class="material-title">ドップラー効果</p>
-          <p class="material-note">動く音源と音の波面を観察します。</p>
-          <a class="open-link" href="simulations/12_moving_sound_source_wave/index.html">開く</a>
-        </li>
+          <li class="material">
+            <p class="material-title">ドップラー効果</p>
+            <p class="material-note">動く音源と音の波面を観察します。</p>
+            <a class="open-link" href="simulations/12_moving_sound_source_wave/index.html">開く</a>
+          </li>
 
-        <li class="material">
-          <p class="material-title">薄膜干渉</p>
-          <p class="material-note">膜の厚さが変わると、反射光の見え方がどう変わるかを観察します。</p>
-          <a class="open-link" href="simulations/13_thin_film_interference_gpt56/index.html">開く</a>
-        </li>
-      </ul>
+          <li class="material">
+            <p class="material-title">薄膜干渉</p>
+            <p class="material-note">膜の厚さが変わると、反射光の見え方がどう変わるかを観察します。</p>
+            <a class="open-link" href="simulations/13_thin_film_interference_gpt56/index.html">開く</a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="content-group">
+        <h2>その他ツール</h2>
+        <ul class="materials">
+          <li class="material">
+            <p class="material-title">実験グラフ作成ツール</p>
+            <p class="material-note">測定データから散布図と近似直線を作成し、グラフをPNG画像で保存できます。</p>
+            <a class="open-link" href="simulations/14_physics_graph_tool/index.html">開く</a>
+          </li>
+        </ul>
+      </section>
     </main>
 
     <footer>
