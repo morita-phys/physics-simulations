@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RLC直列回路のベクトル図と時間変化</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --border: #d8dde3;
+      --text: #1d252d;
+      --muted: #63707c;
+      --axis: #73808b;
+      --grid: #e7ebef;
+      --blue: #1668d4;
+      --red: #d83b32;
+      --green: #188647;
+      --purple: #7a35bd;
+      --orange: #e36f10;
+      --focus: #0b65c2;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      min-width: 1100px;
+      max-width: 100vw;
+      max-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "BIZ UDPGothic", "Yu Gothic", Meiryo, sans-serif;
+      font-size: 13px;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 32%, transparent);
+      outline-offset: 2px;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: 48px minmax(0, 1fr) 78px;
+      gap: 9px;
+      width: 100vw;
+      height: 100vh;
+      padding: 0 10px 10px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(21px, 2vw, 28px);
+      line-height: 1.15;
+      letter-spacing: 0.02em;
+    }
+
+    .display-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px 12px;
+      min-width: 0;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+
+    .display-controls-title {
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .quantity-symbol {
+      font-family: "STIX Two Math", "Cambria Math", "Times New Roman", serif;
+      font-size: 1.08em;
+      vertical-align: middle;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(230px, 0.66fr) minmax(770px, 2.34fr);
+      gap: 9px;
+      min-height: 0;
+    }
+
+    .left-column {
+      display: grid;
+      grid-template-rows: 164px minmax(0, 1fr);
+      gap: 9px;
+      min-height: 0;
+    }
+
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .circuit-panel {
+      display: grid;
+      grid-template-rows: 28px minmax(0, 1fr);
+      padding: 10px 12px 8px;
+    }
+
+    .circuit-panel svg {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .parameter-panel {
+      display: grid;
+      grid-template-rows: 26px repeat(5, minmax(56px, 1fr));
+      align-content: stretch;
+      padding: 9px 13px 8px;
+    }
+
+    .parameter-panel h2 {
+      text-align: left;
+    }
+
+    .parameter {
+      display: grid;
+      align-content: center;
+      min-height: 0;
+    }
+
+    .parameter-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .parameter-name {
+      min-width: 0;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .parameter-meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .component-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .component-toggle input {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .parameter.is-disabled .parameter-name,
+    .parameter.is-disabled .parameter-value,
+    .parameter.is-disabled .range-ends {
+      color: #98a1aa;
+    }
+
+    input[type="range"]:disabled {
+      cursor: default;
+      opacity: 0.45;
+    }
+
+    .parameter-value {
+      min-width: 60px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .range-ends {
+      display: flex;
+      justify-content: space-between;
+      margin-top: -1px;
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .combined-panel {
+      display: grid;
+      grid-template-rows: 30px 32px minmax(0, 1fr);
+      padding: 10px 10px 7px;
+    }
+
+    .combined-titles,
+    .combined-content {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.92fr) minmax(440px, 1.42fr);
+      gap: 9px;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .combined-titles {
+      align-items: center;
+    }
+
+    .visual-section {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) 36px;
+      min-width: 0;
+      min-height: 0;
+      padding-right: 9px;
+      border-right: 1px solid var(--border);
+    }
+
+    .graph-section {
+      display: grid;
+      grid-template-rows: minmax(0, 1.22fr) minmax(0, 0.83fr) 22px;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 5px;
+      line-height: 1.15;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .check input {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .check.is-disabled {
+      opacity: 0.42;
+      cursor: default;
+    }
+
+    .check.is-disabled input {
+      cursor: default;
+    }
+
+    .series-i { color: var(--blue); }
+    .series-vr { color: var(--red); }
+    .series-vl { color: var(--green); }
+    .series-vc { color: var(--purple); }
+    .series-vs { color: var(--orange); }
+
+    .canvas-wrap {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .model-warning {
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      left: 50%;
+      width: min(92%, 330px);
+      padding: 10px 12px;
+      transform: translate(-50%, -50%);
+      border: 1px solid #c36a00;
+      border-radius: 6px;
+      background: #fff8ed;
+      color: #703b00;
+      font-weight: 600;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .model-warning[hidden] {
+      display: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .visual-foot {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-content: center;
+      gap: 0;
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .graph-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .visual-foot span:last-child,
+    .graph-foot span:last-child {
+      text-align: right;
+    }
+
+    .graph-divider {
+      border-top: 1px solid var(--border);
+    }
+
+    .control-bar {
+      display: grid;
+      grid-template-columns: auto minmax(180px, 0.58fr) minmax(280px, 1fr);
+      align-items: center;
+      gap: 18px;
+      padding: 10px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 92px;
+      height: 42px;
+      padding: 0 15px;
+      border: 1px solid #cbd2d9;
+      border-radius: 6px;
+      background: #eef1f4;
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .control-button:hover {
+      background: #e3e8ed;
+    }
+
+    .control-button.primary,
+    .control-button[aria-pressed="true"] {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    .control-button .icon {
+      margin-right: 7px;
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .control-button .pause-icon {
+      display: inline-flex;
+      align-items: stretch;
+      gap: 3px;
+      width: 11px;
+      height: 14px;
+      margin-right: 7px;
+    }
+
+    .control-button .pause-icon::before,
+    .control-button .pause-icon::after {
+      width: 4px;
+      background: currentColor;
+      border-radius: 1px;
+      content: "";
+    }
+
+    .speed-control,
+    .time-control {
+      display: grid;
+      grid-template-columns: auto minmax(90px, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .time-control {
+      grid-template-columns: minmax(250px, auto) minmax(120px, 1fr);
+    }
+
+    .control-label,
+    .control-readout {
+      white-space: nowrap;
+    }
+
+    .control-readout {
+      min-width: 55px;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .elapsed {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1200px) {
+      .component-toggle .toggle-text {
+        display: none;
+      }
+    }
+
+    @media (max-height: 700px) {
+      body {
+        font-size: 12px;
+      }
+
+      .app {
+        grid-template-rows: 42px minmax(0, 1fr) 68px;
+        gap: 7px;
+        padding: 0 8px 8px;
+      }
+
+      .workspace,
+      .left-column {
+        gap: 7px;
+      }
+
+      .left-column {
+        grid-template-rows: 142px minmax(0, 1fr);
+      }
+
+      .panel {
+        border-radius: 6px;
+      }
+
+      .circuit-panel,
+      .combined-panel {
+        padding-top: 7px;
+      }
+
+      .parameter-panel {
+        padding-top: 7px;
+      }
+
+      .control-bar {
+        padding: 7px 11px;
+      }
+
+      .control-button {
+        height: 38px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>RLC直列回路のベクトル図と時間変化</h1>
+    </header>
+
+    <main class="workspace">
+      <div class="left-column">
+        <section class="panel circuit-panel" aria-labelledby="circuit-title">
+          <h2 id="circuit-title">回路図</h2>
+          <svg viewBox="0 0 340 120" role="img" aria-label="下辺に交流電源を置き、上辺に抵抗、コイル、コンデンサーを直列につないだ閉回路">
+            <g fill="none" stroke="#29323a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <!-- 左辺から上辺の抵抗へ -->
+              <path d="M35 92V28H59"/>
+
+              <!-- 抵抗 R -->
+              <path id="circuitR" d="M59 28L65 19L73 37L81 19L89 37L97 19L105 37L111 28"/>
+              <path id="circuitRWire" d="M59 28H111" style="display:none"/>
+
+              <!-- 抵抗からコイルへ -->
+              <path d="M111 28H143"/>
+
+              <!-- コイル L -->
+              <path id="circuitL" d="M143 28
+                       C143 18 156.5 18 156.5 28
+                       C156.5 18 170 18 170 28
+                       C170 18 183.5 18 183.5 28
+                       C183.5 18 197 18 197 28"/>
+              <path id="circuitLWire" d="M143 28H197" style="display:none"/>
+
+              <!-- コイルからコンデンサーへ -->
+              <path d="M197 28H249"/>
+
+              <!-- コンデンサー C と右辺 -->
+              <path id="circuitC" d="M249 15V41M261 15V41"/>
+              <path id="circuitCWire" d="M249 28H261" style="display:none"/>
+              <path d="M261 28H305V92"/>
+
+              <!-- 下辺と交流電源 -->
+              <path d="M305 92H186M154 92H35"/>
+              <circle cx="170" cy="92" r="16"/>
+              <path d="M158 92C162 83 166 83 170 92S178 101 182 92"/>
+            </g>
+            <g fill="#202830" font-family="BIZ UDPGothic, Yu Gothic, Meiryo, sans-serif" font-size="15">
+              <text id="circuitRLabel" x="85" y="13" text-anchor="middle" font-style="italic">R</text>
+              <text id="circuitLLabel" x="170" y="13" text-anchor="middle" font-style="italic">L</text>
+              <text id="circuitCLabel" x="255" y="13" text-anchor="middle" font-style="italic">C</text>
+              <text x="195" y="78" font-style="italic">vₛ(t)</text>
+            </g>
+          </svg>
+        </section>
+
+        <section class="panel parameter-panel" aria-labelledby="parameter-title">
+          <h2 id="parameter-title">パラメータ</h2>
+
+          <div class="parameter" id="rParameter">
+            <div class="parameter-head">
+              <label class="parameter-name" for="rControl">抵抗 <i>R</i></label>
+              <span class="parameter-meta">
+                <label class="component-toggle" for="useR">
+                  <input id="useR" type="checkbox" checked aria-label="抵抗を使用">
+                  <span class="toggle-text">使用</span>
+                </label>
+                <output class="parameter-value" id="rValue">50 Ω</output>
+              </span>
+            </div>
+            <input id="rControl" type="range" min="10" max="200" step="1" value="50">
+            <span class="range-ends"><span>10</span><span>200 Ω</span></span>
+          </div>
+
+          <div class="parameter" id="lParameter">
+            <div class="parameter-head">
+              <label class="parameter-name" for="lControl">自己インダクタンス <i>L</i></label>
+              <span class="parameter-meta">
+                <label class="component-toggle" for="useL">
+                  <input id="useL" type="checkbox" checked aria-label="コイルを使用">
+                  <span class="toggle-text">使用</span>
+                </label>
+                <output class="parameter-value" id="lValue">100 mH</output>
+              </span>
+            </div>
+            <input id="lControl" type="range" min="10" max="500" step="10" value="100">
+            <span class="range-ends"><span>10</span><span>500 mH</span></span>
+          </div>
+
+          <div class="parameter" id="cParameter">
+            <div class="parameter-head">
+              <label class="parameter-name" for="cControl">電気容量 <i>C</i></label>
+              <span class="parameter-meta">
+                <label class="component-toggle" for="useC">
+                  <input id="useC" type="checkbox" checked aria-label="コンデンサーを使用">
+                  <span class="toggle-text">使用</span>
+                </label>
+                <output class="parameter-value" id="cValue">10 μF</output>
+              </span>
+            </div>
+            <input id="cControl" type="range" min="1" max="100" step="1" value="10">
+            <span class="range-ends"><span>1</span><span>100 μF</span></span>
+          </div>
+
+          <label class="parameter" for="fControl">
+            <span class="parameter-head">
+              <span class="parameter-name">周波数 <i>f</i></span>
+              <output class="parameter-value" id="fValue">60 Hz</output>
+            </span>
+            <input id="fControl" type="range" min="10" max="200" step="1" value="60">
+            <span class="range-ends"><span>10</span><span>200 Hz</span></span>
+          </label>
+
+          <label class="parameter" for="vmControl">
+            <span class="parameter-head">
+              <span class="parameter-name">電源電圧の最大値 <i>V</i><sub>0</sub></span>
+              <output class="parameter-value" id="vmValue">100 V</output>
+            </span>
+            <input id="vmControl" type="range" min="10" max="200" step="5" value="100">
+            <span class="range-ends"><span>10</span><span>200 V</span></span>
+          </label>
+        </section>
+      </div>
+
+      <section class="panel combined-panel" aria-label="ベクトル図と時間変化">
+        <div class="combined-titles">
+          <h2 id="vector-title">ベクトル図</h2>
+          <h2 id="graph-title">時間変化</h2>
+        </div>
+
+        <div class="display-controls" aria-label="ベクトル図と時間変化の表示項目">
+          <span class="display-controls-title">表示項目</span>
+          <label class="check series-i">
+            <input id="showI" type="checkbox" checked>
+            電流
+            <math class="quantity-symbol" aria-label="I・i(t)">
+              <mrow><mi>I</mi><mo>・</mo><mi>i</mi><mo>(</mo><mi>t</mi><mo>)</mo></mrow>
+            </math>
+          </label>
+          <label class="check series-vr">
+            <input id="showVR" type="checkbox">
+            抵抗
+            <math class="quantity-symbol" aria-label="V下付きR・v下付きR(t)">
+              <mrow>
+                <msub><mi>V</mi><mi>R</mi></msub>
+                <mo>・</mo>
+                <msub><mi>v</mi><mi>R</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo>
+              </mrow>
+            </math>
+          </label>
+          <label class="check series-vl">
+            <input id="showVL" type="checkbox">
+            コイル
+            <math class="quantity-symbol" aria-label="V下付きL・v下付きL(t)">
+              <mrow>
+                <msub><mi>V</mi><mi>L</mi></msub>
+                <mo>・</mo>
+                <msub><mi>v</mi><mi>L</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo>
+              </mrow>
+            </math>
+          </label>
+          <label class="check series-vc">
+            <input id="showVC" type="checkbox">
+            コンデンサー
+            <math class="quantity-symbol" aria-label="V下付きC・v下付きC(t)">
+              <mrow>
+                <msub><mi>V</mi><mi>C</mi></msub>
+                <mo>・</mo>
+                <msub><mi>v</mi><mi>C</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo>
+              </mrow>
+            </math>
+          </label>
+          <label class="check series-vs">
+            <input id="showVS" type="checkbox" checked>
+            電源
+            <math class="quantity-symbol" aria-label="V下付きs・v下付きs(t)">
+              <mrow>
+                <msub><mi>V</mi><mi>s</mi></msub>
+                <mo>・</mo>
+                <msub><mi>v</mi><mi>s</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo>
+              </mrow>
+            </math>
+          </label>
+        </div>
+
+        <div class="combined-content">
+          <section class="visual-section" aria-labelledby="vector-title">
+            <div class="canvas-wrap">
+              <canvas id="vectorCanvas" role="img" aria-label="電流を基準に反時計回りに回転する電流と電圧のベクトル図"></canvas>
+              <div class="model-warning" id="modelWarning" role="alert" aria-live="polite" hidden></div>
+            </div>
+            <div class="visual-foot">
+              <span id="vectorScale">表示尺度（自動）：100 px＝100 V（電圧）／1.0 A（電流）</span>
+              <span id="vectorTime">t = 0.0000 s</span>
+            </div>
+          </section>
+
+          <section class="graph-section" aria-labelledby="graph-title">
+            <div class="canvas-wrap">
+              <canvas id="voltageCanvas" role="img" aria-label="現在時刻まで描かれる電圧の時間変化グラフ"></canvas>
+            </div>
+            <div class="canvas-wrap graph-divider">
+              <canvas id="currentCanvas" role="img" aria-label="現在時刻まで描かれる電流の時間変化グラフ"></canvas>
+            </div>
+            <div class="graph-foot">
+              <span id="graphScale">縦軸範囲（自動）　電圧 −150～+150 V　電流 −1.0～+1.0 A</span>
+              <span id="periodValue">周期 T = 0.0167 s</span>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="control-bar" aria-label="再生操作">
+      <div class="button-group">
+        <button class="control-button" id="playButton" type="button" aria-pressed="false">
+          <span class="icon" aria-hidden="true">▶</span>再生
+        </button>
+        <button class="control-button" id="pauseButton" type="button" aria-pressed="false">
+          <span class="pause-icon" aria-hidden="true"></span>一時停止
+        </button>
+        <button class="control-button" id="resetButton" type="button">
+          <span class="icon" aria-hidden="true">↺</span>リセット
+        </button>
+      </div>
+
+      <label class="speed-control" for="speedControl">
+        <span class="control-label">再生速度</span>
+        <input id="speedControl" type="range" min="0.25" max="2" step="0.25" value="1">
+        <output class="control-readout" id="speedValue">1.00 倍</output>
+      </label>
+
+      <label class="time-control" for="timeControl">
+        <span class="elapsed" id="elapsedValue">経過時間　0.0000 s / 0.0167 s</span>
+        <input id="timeControl" type="range" min="0" max="1" step="0.001" value="0">
+      </label>
+    </footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    const DEFAULTS = Object.freeze({
+      R: 50,
+      LmH: 100,
+      CuF: 10,
+      f: 60,
+      Vm: 100,
+      speed: 1,
+      progress: 0,
+      playing: false,
+      useR: true,
+      useL: true,
+      useC: true,
+      showI: true,
+      showVR: false,
+      showVL: false,
+      showVC: false,
+      showVS: true
+    });
+
+    const COLORS = Object.freeze({
+      I: "#1668d4",
+      VR: "#d83b32",
+      VL: "#188647",
+      VC: "#7a35bd",
+      VS: "#e36f10",
+      axis: "#73808b",
+      grid: "#e7ebef",
+      text: "#29323a",
+      muted: "#63707c"
+    });
+
+    const el = {
+      r: document.getElementById("rControl"),
+      l: document.getElementById("lControl"),
+      c: document.getElementById("cControl"),
+      f: document.getElementById("fControl"),
+      vm: document.getElementById("vmControl"),
+      speed: document.getElementById("speedControl"),
+      time: document.getElementById("timeControl"),
+      useR: document.getElementById("useR"),
+      useL: document.getElementById("useL"),
+      useC: document.getElementById("useC"),
+      showI: document.getElementById("showI"),
+      showVR: document.getElementById("showVR"),
+      showVL: document.getElementById("showVL"),
+      showVC: document.getElementById("showVC"),
+      showVS: document.getElementById("showVS"),
+      rValue: document.getElementById("rValue"),
+      lValue: document.getElementById("lValue"),
+      cValue: document.getElementById("cValue"),
+      fValue: document.getElementById("fValue"),
+      vmValue: document.getElementById("vmValue"),
+      speedValue: document.getElementById("speedValue"),
+      elapsedValue: document.getElementById("elapsedValue"),
+      vectorTime: document.getElementById("vectorTime"),
+      vectorScale: document.getElementById("vectorScale"),
+      graphScale: document.getElementById("graphScale"),
+      periodValue: document.getElementById("periodValue"),
+      modelWarning: document.getElementById("modelWarning"),
+      rParameter: document.getElementById("rParameter"),
+      lParameter: document.getElementById("lParameter"),
+      cParameter: document.getElementById("cParameter"),
+      circuitSvg: document.querySelector(".circuit-panel svg"),
+      circuitR: document.getElementById("circuitR"),
+      circuitRWire: document.getElementById("circuitRWire"),
+      circuitRLabel: document.getElementById("circuitRLabel"),
+      circuitL: document.getElementById("circuitL"),
+      circuitLWire: document.getElementById("circuitLWire"),
+      circuitLLabel: document.getElementById("circuitLLabel"),
+      circuitC: document.getElementById("circuitC"),
+      circuitCWire: document.getElementById("circuitCWire"),
+      circuitCLabel: document.getElementById("circuitCLabel"),
+      vectorCanvas: document.getElementById("vectorCanvas"),
+      voltageCanvas: document.getElementById("voltageCanvas"),
+      currentCanvas: document.getElementById("currentCanvas"),
+      play: document.getElementById("playButton"),
+      pause: document.getElementById("pauseButton"),
+      reset: document.getElementById("resetButton")
+    };
+
+    let state = { ...DEFAULTS };
+    let lastFrameTime = performance.now();
+    let vectorScaleMemory = null;
+    let voltageScaleMemory = null;
+    let currentScaleMemory = null;
+
+    function readNumericControls() {
+      state.R = finiteInRange(Number(el.r.value), 10, 200, DEFAULTS.R);
+      state.LmH = finiteInRange(Number(el.l.value), 10, 500, DEFAULTS.LmH);
+      state.CuF = finiteInRange(Number(el.c.value), 1, 100, DEFAULTS.CuF);
+      state.f = finiteInRange(Number(el.f.value), 10, 200, DEFAULTS.f);
+      state.Vm = finiteInRange(Number(el.vm.value), 10, 200, DEFAULTS.Vm);
+      state.speed = finiteInRange(Number(el.speed.value), 0.25, 2, DEFAULTS.speed);
+    }
+
+    function readChecks() {
+      state.useR = el.useR.checked;
+      state.useL = el.useL.checked;
+      state.useC = el.useC.checked;
+      state.showI = el.showI.checked;
+      state.showVR = el.showVR.checked;
+      state.showVL = el.showVL.checked;
+      state.showVC = el.showVC.checked;
+      state.showVS = el.showVS.checked;
+    }
+
+    function finiteInRange(value, min, max, fallback) {
+      if (!Number.isFinite(value)) return fallback;
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function calculate() {
+      const R = state.useR ? state.R : 0;
+      const L = state.useL ? state.LmH * 1e-3 : 0;
+      const C = state.useC ? state.CuF * 1e-6 : 0;
+      const f = state.f;
+      const omega = 2 * Math.PI * f;
+      const XL = state.useL ? omega * L : 0;
+      const XC = state.useC ? 1 / Math.max(omega * C, Number.EPSILON) : 0;
+      const reactance = XL - XC;
+      const rawZ = Math.hypot(R, reactance);
+      const allComponentsOff = !state.useR && !state.useL && !state.useC;
+      const resonanceTolerance = Math.max(1e-6, Math.max(Math.abs(XL), Math.abs(XC), 1) * 1e-4);
+      const idealLCResonance =
+        !state.useR &&
+        state.useL &&
+        state.useC &&
+        Math.abs(reactance) <= resonanceTolerance;
+      const warning = allComponentsOff
+        ? "shortCircuit"
+        : idealLCResonance
+          ? "idealLCResonance"
+          : "";
+      const solvable = warning === "";
+      const Z = solvable ? Math.max(rawZ, Number.EPSILON) : 0;
+      const Im = solvable ? state.Vm / Z : 0;
+      const VRm = Im * R;
+      const VLm = Im * XL;
+      const VCm = Im * XC;
+      const phi = solvable ? Math.atan2(reactance, R) : 0;
+      const T = 1 / f;
+      return {
+        R, L, C, f, omega, XL, XC, Z, Im, VRm, VLm, VCm, phi, T,
+        Vm: state.Vm, solvable, warning
+      };
+    }
+
+    function setControlsFromState() {
+      el.r.value = state.R;
+      el.l.value = state.LmH;
+      el.c.value = state.CuF;
+      el.f.value = state.f;
+      el.vm.value = state.Vm;
+      el.speed.value = state.speed;
+      el.time.value = state.progress;
+      el.useR.checked = state.useR;
+      el.useL.checked = state.useL;
+      el.useC.checked = state.useC;
+      el.showI.checked = state.showI;
+      el.showVR.checked = state.showVR;
+      el.showVL.checked = state.showVL;
+      el.showVC.checked = state.showVC;
+      el.showVS.checked = state.showVS;
+    }
+
+    function syncComponentUi() {
+      const components = [
+        {
+          enabled: state.useR,
+          slider: el.r,
+          parameter: el.rParameter,
+          displayToggle: el.showVR,
+          symbol: el.circuitR,
+          wire: el.circuitRWire,
+          label: el.circuitRLabel
+        },
+        {
+          enabled: state.useL,
+          slider: el.l,
+          parameter: el.lParameter,
+          displayToggle: el.showVL,
+          symbol: el.circuitL,
+          wire: el.circuitLWire,
+          label: el.circuitLLabel
+        },
+        {
+          enabled: state.useC,
+          slider: el.c,
+          parameter: el.cParameter,
+          displayToggle: el.showVC,
+          symbol: el.circuitC,
+          wire: el.circuitCWire,
+          label: el.circuitCLabel
+        }
+      ];
+
+      components.forEach(component => {
+        component.slider.disabled = !component.enabled;
+        component.parameter.classList.toggle("is-disabled", !component.enabled);
+        component.displayToggle.disabled = !component.enabled;
+        component.displayToggle.closest(".check").classList.toggle("is-disabled", !component.enabled);
+        component.symbol.style.display = component.enabled ? "" : "none";
+        component.wire.style.display = component.enabled ? "none" : "";
+        component.label.style.display = component.enabled ? "" : "none";
+      });
+
+      const activeParts = [
+        state.useR ? "抵抗" : "",
+        state.useL ? "コイル" : "",
+        state.useC ? "コンデンサー" : ""
+      ].filter(Boolean);
+      el.circuitSvg.setAttribute(
+        "aria-label",
+        activeParts.length
+          ? `下辺に交流電源を置き、${activeParts.join("、")}を直列につないだ閉回路`
+          : "理想交流電源を導線で短絡した回路"
+      );
+    }
+
+    function updateModelWarning(data) {
+      let message = "";
+      if (data.warning === "idealLCResonance") {
+        message = "理想LC共振：インピーダンスがほぼ0になるため、定常値を表示できません。";
+      } else if (data.warning === "shortCircuit") {
+        message = "理想電源が短絡されているため、定常値を表示できません。";
+      }
+      el.modelWarning.textContent = message;
+      el.modelWarning.hidden = message === "";
+    }
+
+    function updateReadouts(data) {
+      const t = state.progress * data.T;
+      el.rValue.textContent = `${state.R} Ω`;
+      el.lValue.textContent = `${state.LmH} mH`;
+      el.cValue.textContent = `${state.CuF} μF`;
+      el.fValue.textContent = `${state.f} Hz`;
+      el.vmValue.textContent = `${state.Vm} V`;
+      el.speedValue.textContent = `${state.speed.toFixed(2)} 倍`;
+      el.elapsedValue.textContent = `経過時間　${formatSeconds(t)} s / ${formatSeconds(data.T)} s`;
+      el.vectorTime.textContent = `t = ${formatSeconds(t)} s`;
+      el.periodValue.textContent = `周期 T = ${formatSeconds(data.T)} s`;
+      el.time.value = state.progress;
+      el.play.classList.toggle("primary", state.playing);
+      el.play.setAttribute("aria-pressed", String(state.playing));
+      el.pause.classList.toggle("primary", !state.playing && state.progress > 0);
+      el.pause.setAttribute("aria-pressed", String(!state.playing && state.progress > 0));
+    }
+
+    function fitCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = Math.max(1, window.devicePixelRatio || 1);
+      const pixelWidth = Math.max(1, Math.round(rect.width * ratio));
+      const pixelHeight = Math.max(1, Math.round(rect.height * ratio));
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+      }
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+
+    function drawAll() {
+      const data = calculate();
+      if (!data.solvable) state.playing = false;
+      syncComponentUi();
+      updateModelWarning(data);
+      updateReadouts(data);
+      drawVector(data);
+      drawVoltageGraph(data);
+      drawCurrentGraph(data);
+    }
+
+    function drawVector(data) {
+      const { ctx, width, height } = fitCanvas(el.vectorCanvas);
+      const cx = width / 2;
+      const cy = height / 2 + 3;
+      const radius = Math.max(40, Math.min(width * 0.44, height * 0.44));
+      const theta = 2 * Math.PI * state.progress;
+      const allVoltageAmplitudes = [data.Vm, data.VRm, data.VLm, data.VCm];
+      const voltageLimit = stableNiceLimit(Math.max(...allVoltageAmplitudes), "vector");
+      const voltagePixelsPerUnit = radius * 0.84 / voltageLimit;
+      const currentLimit = niceLimit(data.Im);
+      const currentPixelsPerUnit = radius * 0.84 / currentLimit;
+
+      drawVectorAxes(ctx, cx, cy, radius);
+      if (!data.solvable) {
+        el.vectorScale.textContent = "表示尺度：—（計算停止）";
+        return;
+      }
+      drawRotationIndicator(ctx, cx, cy, radius);
+
+      if (state.showI) {
+        drawArrow(ctx, cx, cy, data.Im, theta, currentPixelsPerUnit, COLORS.I, "I", "");
+      }
+      if (state.showVR && state.useR) {
+        drawArrow(ctx, cx, cy, data.VRm, theta, voltagePixelsPerUnit, COLORS.VR, "V", "R");
+      }
+      if (state.showVL && state.useL) {
+        drawArrow(ctx, cx, cy, data.VLm, theta + Math.PI / 2, voltagePixelsPerUnit, COLORS.VL, "V", "L");
+      }
+      if (state.showVC && state.useC) {
+        drawArrow(ctx, cx, cy, data.VCm, theta - Math.PI / 2, voltagePixelsPerUnit, COLORS.VC, "V", "C");
+      }
+      if (state.showVS) {
+        drawArrow(ctx, cx, cy, data.Vm, theta + data.phi, voltagePixelsPerUnit, COLORS.VS, "V", "s");
+      }
+
+      const pxReference = 100;
+      const voltageReference = pxReference / voltagePixelsPerUnit;
+      const currentReference = pxReference / currentPixelsPerUnit;
+      el.vectorScale.textContent =
+        `表示尺度（自動）：${pxReference} px＝${formatScale(voltageReference)} V（電圧）／` +
+        `${formatScale(currentReference)} A（電流）`;
+    }
+
+    function drawVectorAxes(ctx, cx, cy, radius) {
+      ctx.save();
+      ctx.strokeStyle = COLORS.grid;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = COLORS.axis;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx - radius - 16, cy);
+      ctx.lineTo(cx + radius + 16, cy);
+      ctx.moveTo(cx, cy - radius - 10);
+      ctx.lineTo(cx, cy + radius + 10);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = COLORS.text;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawRotationIndicator(ctx, cx, cy, radius) {
+      const arcRadius = radius * 0.88;
+      const start = -0.54;
+      const end = -1.18;
+      ctx.save();
+      ctx.strokeStyle = COLORS.text;
+      ctx.fillStyle = COLORS.text;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, arcRadius, start, end, true);
+      ctx.stroke();
+      const x = cx + arcRadius * Math.cos(end);
+      const y = cy + arcRadius * Math.sin(end);
+      const tangent = end - Math.PI / 2;
+      drawArrowHead(ctx, x, y, tangent, 7);
+      ctx.font = "italic 14px serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("ω", cx + arcRadius * Math.cos(-0.85) + 8, cy + arcRadius * Math.sin(-0.85));
+      ctx.restore();
+    }
+
+    function drawArrow(ctx, cx, cy, amplitude, angle, scale, color, label, subscript) {
+      const length = Math.max(0, amplitude * scale);
+      const x = cx + length * Math.cos(angle);
+      const y = cy - length * Math.sin(angle);
+      const canvasAngle = Math.atan2(y - cy, x - cx);
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      drawArrowHead(ctx, x, y, canvasAngle, 9);
+
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const labelX = x + (cos >= 0 ? 7 : -7);
+      const labelY = y + (sin >= 0 ? -8 : 10);
+      drawVectorLabel(ctx, label, subscript, labelX, labelY, cos >= 0 ? "left" : "right");
+      ctx.restore();
+    }
+
+    function drawVectorLabel(ctx, base, subscript, x, y, align) {
+      const baseFont = "italic 15px serif";
+      const subscriptFont = "italic 10px serif";
+
+      ctx.font = baseFont;
+      const baseWidth = ctx.measureText(base).width;
+      if (!subscript) {
+        ctx.textAlign = align;
+        ctx.textBaseline = "middle";
+        ctx.fillText(base, x, y);
+        return;
+      }
+
+      ctx.font = subscriptFont;
+      const subscriptWidth = ctx.measureText(subscript).width;
+      const totalWidth = baseWidth + subscriptWidth + 1;
+      const startX = align === "left" ? x : x - totalWidth;
+
+      ctx.font = baseFont;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(base, startX, y);
+
+      ctx.font = subscriptFont;
+      ctx.fillText(subscript, startX + baseWidth + 1, y + 4.5);
+    }
+
+    function drawArrowHead(ctx, x, y, angle, size) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - size * Math.cos(angle - 0.48), y - size * Math.sin(angle - 0.48));
+      ctx.lineTo(x - size * Math.cos(angle + 0.48), y - size * Math.sin(angle + 0.48));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function voltageSeries(data) {
+      return [
+        {
+          key: "VS",
+          shown: state.showVS,
+          amplitude: data.Vm,
+          color: COLORS.VS,
+          value: angle => data.Vm * Math.sin(angle + data.phi)
+        },
+        {
+          key: "VR",
+          shown: state.showVR && state.useR,
+          amplitude: data.VRm,
+          color: COLORS.VR,
+          value: angle => data.VRm * Math.sin(angle)
+        },
+        {
+          key: "VL",
+          shown: state.showVL && state.useL,
+          amplitude: data.VLm,
+          color: COLORS.VL,
+          value: angle => data.VLm * Math.sin(angle + Math.PI / 2)
+        },
+        {
+          key: "VC",
+          shown: state.showVC && state.useC,
+          amplitude: data.VCm,
+          color: COLORS.VC,
+          value: angle => data.VCm * Math.sin(angle - Math.PI / 2)
+        }
+      ];
+    }
+
+    function drawVoltageGraph(data) {
+      const { ctx, width, height } = fitCanvas(el.voltageCanvas);
+      const series = voltageSeries(data).filter(item => item.shown);
+      const maxAmplitude = data.solvable && series.length
+        ? Math.max(...series.map(item => item.amplitude))
+        : data.Vm;
+      const limit = data.solvable ? stableNiceLimit(maxAmplitude, "voltage") : 1;
+      voltageScaleMemory = limit;
+      const layout = graphLayout(width, height, false);
+      drawGraphFrame(ctx, layout, limit, data.T, "電圧 [V]", false);
+      if (data.solvable) drawWaveSeries(ctx, layout, series, limit);
+    }
+
+    function drawCurrentGraph(data) {
+      const { ctx, width, height } = fitCanvas(el.currentCanvas);
+      const limit = data.solvable ? stableNiceLimit(data.Im, "current") : 1;
+      currentScaleMemory = limit;
+      const layout = graphLayout(width, height, true);
+      drawGraphFrame(ctx, layout, limit, data.T, "電流 [A]", true);
+
+      if (data.solvable && state.showI) {
+        drawWaveSeries(ctx, layout, [{
+          key: "I",
+          shown: true,
+          amplitude: data.Im,
+          color: COLORS.I,
+          value: angle => data.Im * Math.sin(angle)
+        }], limit);
+      } else if (data.solvable) {
+        drawCurrentLine(ctx, layout);
+      }
+
+      el.graphScale.textContent = data.solvable
+        ? `縦軸範囲（自動）　電圧 −${formatScale(voltageScaleMemory || data.Vm)}～` +
+          `+${formatScale(voltageScaleMemory || data.Vm)} V　` +
+          `電流 −${formatScale(currentScaleMemory || data.Im)}～` +
+          `+${formatScale(currentScaleMemory || data.Im)} A`
+        : "縦軸範囲：—（計算停止）";
+    }
+
+    function graphLayout(width, height, showXAxis) {
+      return {
+        left: 57,
+        right: 30,
+        top: 24,
+        bottom: showXAxis ? 36 : 12,
+        width: Math.max(10, width - 87),
+        height: Math.max(10, height - (showXAxis ? 60 : 36))
+      };
+    }
+
+    function drawGraphFrame(ctx, layout, limit, period, yLabel, showXAxis) {
+      const { left, top, width, height } = layout;
+      const midY = top + height / 2;
+      ctx.save();
+      ctx.strokeStyle = COLORS.grid;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 4; i++) {
+        const x = left + width * i / 4;
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, top + height);
+      }
+      for (let i = 0; i <= 4; i++) {
+        const y = top + height * i / 4;
+        ctx.moveTo(left, y);
+        ctx.lineTo(left + width, y);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = COLORS.axis;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(left, top);
+      ctx.lineTo(left, top + height);
+      ctx.moveTo(left, midY);
+      ctx.lineTo(left + width, midY);
+      ctx.stroke();
+
+      ctx.fillStyle = COLORS.muted;
+      ctx.font = "11px BIZ UDPGothic, Yu Gothic, Meiryo, sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "right";
+      [1, 0.5, 0, -0.5, -1].forEach((ratio, index) => {
+        const y = top + height * index / 4;
+        ctx.fillText(formatAxis(limit * ratio), left - 7, y);
+      });
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(yLabel, 4, 3);
+
+      if (showXAxis) {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        for (let i = 0; i <= 4; i++) {
+          const x = left + width * i / 4;
+          ctx.fillText(formatSeconds(period * i / 4), x, top + height + 7);
+        }
+        ctx.textAlign = "right";
+        ctx.fillText("時刻 t [s]", left + width, top + height + 23);
+      }
+      ctx.restore();
+    }
+
+    function drawWaveSeries(ctx, layout, series, limit) {
+      const { left, top, width, height } = layout;
+      const midY = top + height / 2;
+      const count = Math.max(1, Math.floor(width * state.progress));
+
+      if (state.progress > 0.0005) {
+        for (const item of series) {
+          ctx.save();
+          ctx.strokeStyle = item.color;
+          ctx.lineWidth = item.key === "VS" || item.key === "I" ? 2.3 : 1.8;
+          ctx.lineJoin = "round";
+          ctx.beginPath();
+          for (let i = 0; i <= count; i++) {
+            const p = state.progress * i / count;
+            const angle = 2 * Math.PI * p;
+            const x = left + width * p;
+            const y = midY - item.value(angle) / limit * height / 2;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          const markerAngle = 2 * Math.PI * state.progress;
+          const markerX = left + width * state.progress;
+          const markerY = midY - item.value(markerAngle) / limit * height / 2;
+          ctx.fillStyle = item.color;
+          ctx.beginPath();
+          ctx.arc(markerX, markerY, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      drawCurrentLine(ctx, layout);
+    }
+
+    function drawCurrentLine(ctx, layout) {
+      if (state.progress <= 0.0005) return;
+      const x = layout.left + layout.width * state.progress;
+      ctx.save();
+      ctx.strokeStyle = "#4f5b66";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x, layout.top);
+      ctx.lineTo(x, layout.top + layout.height);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function niceLimit(amplitude) {
+      if (!Number.isFinite(amplitude) || amplitude <= 0) return 1;
+      const padded = amplitude * 1.18;
+      const exponent = Math.floor(Math.log10(padded));
+      const power = Math.pow(10, exponent);
+      const normalized = padded / power;
+      const steps = [1, 1.5, 2, 3, 5, 7.5, 10];
+      const step = steps.find(value => normalized <= value) || 10;
+      return step * power;
+    }
+
+    function stableNiceLimit(amplitude, target) {
+      const next = niceLimit(amplitude);
+      if (target === "vector") {
+        if (vectorScaleMemory === null || amplitude > vectorScaleMemory / 1.18 || amplitude < vectorScaleMemory / 3) {
+          vectorScaleMemory = next;
+        }
+        return vectorScaleMemory;
+      }
+      if (target === "voltage") {
+        if (voltageScaleMemory === null || amplitude > voltageScaleMemory / 1.18 || amplitude < voltageScaleMemory / 3) {
+          voltageScaleMemory = next;
+        }
+        return voltageScaleMemory;
+      }
+      if (currentScaleMemory === null || amplitude > currentScaleMemory / 1.18 || amplitude < currentScaleMemory / 3) {
+        currentScaleMemory = next;
+      }
+      return currentScaleMemory;
+    }
+
+    function formatSeconds(value) {
+      if (!Number.isFinite(value)) return "0.0000";
+      if (value < 0.1) return value.toFixed(4);
+      return value.toFixed(3);
+    }
+
+    function formatAxis(value) {
+      const absolute = Math.abs(value);
+      if (absolute >= 100) return value.toFixed(0);
+      if (absolute >= 10) return value.toFixed(0);
+      if (absolute >= 1) return value.toFixed(1).replace(/\.0$/, "");
+      if (absolute >= 0.1) return value.toFixed(2).replace(/0$/, "").replace(/\.$/, "");
+      return value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+    }
+
+    function formatScale(value) {
+      if (!Number.isFinite(value)) return "0";
+      const absolute = Math.abs(value);
+      if (absolute >= 100) return value.toFixed(0);
+      if (absolute >= 10) return value.toFixed(1).replace(/\.0$/, "");
+      if (absolute >= 1) return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+      return value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+    }
+
+    function handleParameterInput() {
+      readNumericControls();
+      drawAll();
+    }
+
+    function handleCheckInput() {
+      readChecks();
+      vectorScaleMemory = null;
+      voltageScaleMemory = null;
+      currentScaleMemory = null;
+      drawAll();
+    }
+
+    function play() {
+      if (!calculate().solvable) {
+        state.playing = false;
+        drawAll();
+        return;
+      }
+      state.playing = true;
+      lastFrameTime = performance.now();
+      drawAll();
+    }
+
+    function pause() {
+      state.playing = false;
+      drawAll();
+    }
+
+    function reset() {
+      state = { ...DEFAULTS };
+      vectorScaleMemory = null;
+      voltageScaleMemory = null;
+      currentScaleMemory = null;
+      setControlsFromState();
+      drawAll();
+    }
+
+    function animationFrame(now) {
+      const elapsedSeconds = Math.min(0.1, Math.max(0, (now - lastFrameTime) / 1000));
+      lastFrameTime = now;
+      if (state.playing) {
+        state.progress += elapsedSeconds * state.speed / 4;
+        if (state.progress >= 1) state.progress %= 1;
+        drawAll();
+      }
+      requestAnimationFrame(animationFrame);
+    }
+
+    [el.r, el.l, el.c, el.f, el.vm, el.speed].forEach(control => {
+      control.addEventListener("input", handleParameterInput);
+    });
+
+    [
+      el.useR, el.useL, el.useC,
+      el.showI, el.showVR, el.showVL, el.showVC, el.showVS
+    ].forEach(control => control.addEventListener("change", handleCheckInput));
+
+    el.time.addEventListener("input", () => {
+      state.playing = false;
+      state.progress = finiteInRange(Number(el.time.value), 0, 1, 0);
+      drawAll();
+    });
+    el.play.addEventListener("click", play);
+    el.pause.addEventListener("click", pause);
+    el.reset.addEventListener("click", reset);
+    window.addEventListener("resize", drawAll);
+
+    setControlsFromState();
+    drawAll();
+    requestAnimationFrame(animationFrame);
+  </script>
+</body>
+</html>
