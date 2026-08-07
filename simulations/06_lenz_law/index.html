@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>誘導電流の向きはどのように決まるのだろう？</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy-1: #f4f6f8;
+      --navy-2: #f4f6f8;
+      --panel-border: #d4dbe2;
+      --panel-text: #0d1f31;
+      --blue: #176fb8;
+      --north: #e22a23;
+      --south: #2365bd;
+      --current: #ffe668;
+      --induced: #72e387;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-width: 320px;
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      height: 100vh;
+      overflow: hidden;
+      color: var(--panel-text);
+      background: #f4f6f8;
+      font-family: "Yu Gothic UI", "Yu Gothic", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
+    }
+
+    .title-bar {
+      height: 66px;
+      display: grid;
+      place-items: center;
+      padding: 0 18px;
+      color: #0b1f33;
+      background: linear-gradient(135deg, var(--navy-1), var(--navy-2));
+      box-shadow: none;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 2.55vw, 35px);
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-align: center;
+      text-shadow: none;
+    }
+
+    .workspace {
+      width: 100%;
+      max-width: 100vw;
+      height: calc(100vh - 66px);
+      max-height: calc(100vh - 66px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 12px;
+      padding: 12px;
+      background: #f4f6f8;
+    }
+
+    .stage {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid #d4dbe2;
+      border-radius: 14px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(16, 34, 50, 0.08);
+    }
+
+    #simulation {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .control-panel {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: auto;
+      padding: 12px 10px 10px;
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(16, 34, 50, 0.08);
+    }
+
+    .drag-hint {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .drag-symbol {
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-bottom: 8px;
+      color: #607080;
+      font-size: 27px;
+      line-height: 1;
+    }
+
+    .drag-symbol .hand {
+      color: #0d1f31;
+      font-size: 31px;
+      transform: translateY(3px);
+    }
+
+    .display-options {
+      overflow: hidden;
+      border: 1px solid #d4dbe2;
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .option-row {
+      min-height: 54px;
+      display: grid;
+      grid-template-columns: 21px 1fr 40px;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .option-row + .option-row {
+      border-top: 1px solid #dce2e7;
+    }
+
+    .option-row input {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .option-row:focus-within {
+      outline: 3px solid rgba(23, 111, 184, 0.25);
+      outline-offset: -3px;
+    }
+
+    .sample-icon {
+      width: 40px;
+      height: 27px;
+      display: block;
+    }
+
+    .panel-divider {
+      width: 100%;
+      height: 1px;
+      margin: 12px 0;
+      border: 0;
+      background: #d4dbe2;
+    }
+
+    .pole-heading {
+      margin: 0 0 6px;
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .pole-switch {
+      width: min(100%, 190px);
+      height: 52px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-self: center;
+      overflow: hidden;
+      padding: 0;
+      border: 3px solid #33485c;
+      border-radius: 10px;
+      background: #fff;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(16, 34, 50, 0.14);
+    }
+
+    .pole-switch:hover {
+      filter: brightness(1.04);
+    }
+
+    .pole-switch:focus-visible,
+    .reset-button:focus-visible {
+      outline: 4px solid rgba(23, 111, 184, 0.3);
+      outline-offset: 3px;
+    }
+
+    .pole-half {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      font: 700 25px/1 system-ui, sans-serif;
+      text-shadow: 0 2px 2px rgba(0, 0, 0, 0.25);
+    }
+
+    .pole-half.north {
+      background: linear-gradient(#f14438, #d81313);
+    }
+
+    .pole-half.south {
+      background: linear-gradient(#377bd2, #174fa1);
+    }
+
+    .reset-button {
+      min-height: 44px;
+      margin-top: auto;
+      border: 2px solid var(--blue);
+      border-radius: 10px;
+      color: #176fb8;
+      background: #ffffff;
+      font: 700 18px/1 "Yu Gothic UI", "Yu Gothic", system-ui, sans-serif;
+      cursor: pointer;
+    }
+
+    .reset-button:hover {
+      background: #eef5fb;
+    }
+
+    .reset-icon {
+      display: inline-block;
+      margin-right: 6px;
+      font: 700 24px/1 system-ui, sans-serif;
+      vertical-align: -2px;
+    }
+
+    .flux-line {
+      fill: none;
+      stroke: #5f7f99;
+      stroke-width: 2.3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .flux-line.outer {
+      opacity: 0.74;
+    }
+
+    .flux-line.edge-extension {
+      opacity: 0.62;
+    }
+
+    .flux-line.through-coil {
+      opacity: 0.86;
+    }
+
+    .flux-line.axial {
+      opacity: 0.88;
+    }
+
+    .flux-arrow-guide {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 1;
+    }
+
+    .wire-segment {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    #magnet {
+      cursor: grab;
+      touch-action: none;
+      outline: none;
+    }
+
+    #magnet.dragging {
+      cursor: grabbing;
+    }
+
+    #magnet:focus-visible .magnet-focus {
+      opacity: 1;
+    }
+
+    .current-arrow {
+      fill: var(--current);
+      stroke: #5c4e00;
+      stroke-width: 1.6;
+      stroke-linejoin: round;
+      filter: url(#smallShadow);
+    }
+
+    #fluxLayer,
+    #currentArrowLayer,
+    #inducedFieldLayer {
+      transition: opacity 80ms linear;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        max-height: none;
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        min-height: 540px;
+      }
+
+      .control-panel {
+        display: grid;
+        grid-template-columns: minmax(210px, 1fr) minmax(210px, 1fr);
+        gap: 12px 18px;
+      }
+
+      .drag-hint,
+      .drag-symbol,
+      .display-options,
+      .panel-divider {
+        grid-column: 1;
+      }
+
+      .pole-heading,
+      .pole-switch,
+      .reset-button {
+        grid-column: 2;
+      }
+
+      .pole-heading {
+        align-self: end;
+      }
+
+      .reset-button {
+        width: 100%;
+        margin-top: 8px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .title-bar {
+        height: auto;
+        min-height: 62px;
+        padding: 10px 14px;
+      }
+
+      .workspace {
+        padding: 8px;
+      }
+
+      .stage {
+        min-height: 430px;
+      }
+
+      .control-panel {
+        display: flex;
+      }
+    }
+
+    @media (max-height: 670px) and (min-width: 901px) {
+      .title-bar {
+        height: 56px;
+      }
+
+      .workspace {
+        height: calc(100vh - 56px);
+        max-height: calc(100vh - 56px);
+        padding: 8px;
+        gap: 8px;
+      }
+
+      .control-panel {
+        padding: 12px;
+      }
+
+      .option-row {
+        min-height: 56px;
+      }
+
+      .panel-divider {
+        margin: 12px 0;
+      }
+
+      .drag-symbol {
+        height: 40px;
+        margin-bottom: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="title-bar">
+    <h1>誘導電流の向きはどのように決まるのだろう？</h1>
+  </header>
+
+  <main class="workspace">
+    <section class="stage" aria-label="レンツの法則シミュレーション表示">
+      <svg id="simulation" viewBox="0 0 1080 680" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="svgTitle svgDescription">
+        <title id="svgTitle">磁石と2巻きコイルと検流計</title>
+        <desc id="svgDescription">右側の棒磁石を左右に動かすと、コイル上の電流矢印、コイル内磁場、検流計の針が変化します。</desc>
+
+        <defs>
+          <linearGradient id="copperStroke" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#7a2b08"/>
+            <stop offset="0.24" stop-color="#c85f20"/>
+            <stop offset="0.5" stop-color="#f1a15c"/>
+            <stop offset="0.7" stop-color="#a83f12"/>
+            <stop offset="1" stop-color="#5c210a"/>
+          </linearGradient>
+          <linearGradient id="redMagnet" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f3483d"/>
+            <stop offset="0.52" stop-color="#e4211c"/>
+            <stop offset="1" stop-color="#b90f0c"/>
+          </linearGradient>
+          <linearGradient id="blueMagnet" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3c80d8"/>
+            <stop offset="0.52" stop-color="#2364bd"/>
+            <stop offset="1" stop-color="#123f88"/>
+          </linearGradient>
+          <linearGradient id="meterBody" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset="1" stop-color="#d9dee4"/>
+          </linearGradient>
+          <clipPath id="magnetClip">
+            <rect x="0" y="-45" width="240" height="90" rx="12"/>
+          </clipPath>
+          <filter id="largeShadow" x="-30%" y="-30%" width="160%" height="170%">
+            <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#26394a" flood-opacity="0.24"/>
+          </filter>
+          <filter id="smallShadow" x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#26394a" flood-opacity="0.34"/>
+          </filter>
+          <marker id="fluxArrowForward" viewBox="-2 -4 11 8" refX="3.5" refY="0" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M -1 -3 L 6.5 0 L -1 3 Z" fill="#5f7f99"/>
+          </marker>
+          <marker id="fluxArrowBackward" viewBox="-2 -4 11 8" refX="2" refY="0" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M 6.5 -3 L -1 0 L 6.5 3 Z" fill="#5f7f99"/>
+          </marker>
+        </defs>
+
+        <rect width="1080" height="680" fill="#ffffff"/>
+
+        <g id="coilBack" aria-hidden="true"></g>
+
+        <g id="fluxLayer" aria-label="磁束線" opacity="0">
+          <!-- コイル側：磁石の中心軸に沿い、開口部を水平に貫く1本 -->
+          <path class="flux-line axial" d="M 90 0 C -120 0 -420 0 -820 0"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -205 0 L -232 0" marker-end="url(#fluxArrowForward)"/>
+
+          <!-- S極側：画面右からS極へ入る中心軸上の1本 -->
+          <path class="flux-line axial" d="M 1060 0 C 780 0 480 0 150 0"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M 210 0 L 183 0" marker-end="url(#fluxArrowForward)"/>
+
+          <!-- 上側：内側3本・中間2本・画面外へ続く外側2本 -->
+          <path class="flux-line through-coil" d="M 98.4 -0.8 C 84.9 -1.5 65.5 -2.9 43.0 -5.5 C 20.4 -8.1 -5.1 -11.9 -29.8 -17.0 C -54.6 -22.0 -78.4 -28.4 -97.6 -35.8 C -116.8 -43.1 -131.3 -51.5 -138.3 -60.2 C -145.4 -68.9 -145.0 -78.0 -136.2 -86.7 C -127.4 -95.4 -110.3 -103.6 -86.0 -110.5 C -61.7 -117.5 -30.3 -123.2 5.2 -127.1 C 40.8 -131.0 80.4 -133.0 120.0 -133.0 C 159.6 -133.0 199.2 -131.0 234.8 -127.1 C 270.3 -123.2 301.7 -117.5 326.0 -110.5 C 350.3 -103.6 367.4 -95.4 376.2 -86.7 C 385.0 -78.0 385.4 -68.9 378.3 -60.2 C 371.3 -51.5 356.8 -43.1 337.6 -35.8 C 318.4 -28.4 294.6 -22.0 269.8 -17.0 C 245.1 -11.9 219.6 -8.1 197.0 -5.5 C 174.5 -2.9 155.1 -1.5 141.6 -0.8"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -117.1 -44.4 L -128.8 -51.5" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line through-coil" d="M 93.9 -0.9 C 77.5 -1.8 54.0 -3.5 26.7 -6.7 C -0.5 -9.9 -31.4 -14.4 -61.4 -20.6 C -91.3 -26.7 -120.2 -34.4 -143.4 -43.3 C -166.7 -52.2 -184.2 -62.3 -192.7 -72.9 C -201.3 -83.4 -200.8 -94.5 -190.1 -104.9 C -179.5 -115.4 -158.8 -125.4 -129.4 -133.8 C -100.0 -142.2 -62.0 -149.1 -18.9 -153.8 C 24.1 -158.5 72.0 -161.0 120.0 -161.0 C 168.0 -161.0 215.9 -158.5 258.9 -153.8 C 302.0 -149.1 340.0 -142.2 369.4 -133.8 C 398.8 -125.4 419.5 -115.4 430.1 -104.9 C 440.8 -94.5 441.3 -83.4 432.7 -72.9 C 424.2 -62.3 406.7 -52.2 383.4 -43.3 C 360.2 -34.4 331.3 -26.7 301.4 -20.6 C 271.4 -14.4 240.5 -9.9 213.3 -6.7 C 186.0 -3.5 162.5 -1.8 146.1 -0.9"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -191.4 -71.3 L -197.3 -80.4" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line through-coil" d="M 89.3 -1.1 C 70.2 -2.1 42.5 -4.2 10.5 -7.9 C -21.5 -11.6 -57.8 -16.9 -92.9 -24.1 C -128.1 -31.3 -162.0 -40.4 -189.3 -50.8 C -216.5 -61.3 -237.1 -73.1 -247.1 -85.5 C -257.1 -98.0 -256.5 -110.9 -244.1 -123.2 C -231.6 -135.5 -207.3 -147.2 -172.7 -157.1 C -138.2 -167.0 -93.6 -175.1 -43.1 -180.6 C 7.4 -186.1 63.7 -189.0 120.0 -189.0 C 176.3 -189.0 232.6 -186.1 283.1 -180.6 C 333.6 -175.1 378.2 -167.0 412.7 -157.1 C 447.3 -147.2 471.6 -135.5 484.1 -123.2 C 496.5 -110.9 497.1 -98.0 487.1 -85.5 C 477.1 -73.1 456.5 -61.3 429.3 -50.8 C 402.0 -40.4 368.1 -31.3 332.9 -24.1 C 297.8 -16.9 261.5 -11.6 229.5 -7.9 C 197.5 -4.2 169.8 -2.1 150.7 -1.1"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -254.0 -105.3 L -249.9 -116.2" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line outer" d="M 84.8 -1.2 C 62.8 -2.4 31.1 -4.8 -5.7 -9.0 C -42.4 -13.3 -84.1 -19.4 -124.5 -27.7 C -164.8 -36.0 -203.8 -46.3 -235.1 -58.3 C -266.4 -70.3 -290.0 -84.0 -301.5 -98.2 C -313.0 -112.5 -312.3 -127.3 -298.0 -141.4 C -283.7 -155.6 -255.7 -169.0 -216.1 -180.3 C -176.5 -191.7 -125.2 -201.0 -67.3 -207.3 C -9.3 -213.7 55.3 -217.0 120.0 -217.0 C 184.7 -217.0 249.3 -213.7 307.3 -207.3 C 365.2 -201.0 416.5 -191.7 456.1 -180.3 C 495.7 -169.0 523.7 -155.6 538.0 -141.4 C 552.3 -127.3 553.0 -112.5 541.5 -98.2 C 530.0 -84.0 506.4 -70.3 475.1 -58.3 C 443.8 -46.3 404.8 -36.0 364.5 -27.7 C 324.1 -19.4 282.4 -13.3 245.7 -9.0 C 208.9 -4.8 177.2 -2.4 155.2 -1.2"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -293.3 -145.7 L -275.4 -157.5" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line outer" d="M 78.6 -1.5 C 52.6 -2.9 15.3 -5.6 -28.0 -10.6 C -71.3 -15.6 -120.3 -22.9 -167.9 -32.6 C -215.4 -42.4 -261.2 -54.6 -298.1 -68.7 C -335.0 -82.8 -362.8 -98.9 -376.3 -115.6 C -389.8 -132.4 -389.0 -149.9 -372.2 -166.5 C -355.3 -183.2 -322.4 -198.9 -275.7 -212.3 C -229.1 -225.7 -168.8 -236.7 -100.5 -244.1 C -32.2 -251.6 43.9 -255.5 120.0 -255.5 C 196.1 -255.5 272.2 -251.6 340.5 -244.1 C 408.8 -236.7 469.1 -225.7 515.7 -212.3 C 562.4 -198.9 595.3 -183.2 612.2 -166.5 C 629.0 -149.9 629.8 -132.4 616.3 -115.6 C 602.8 -98.9 575.0 -82.8 538.1 -68.7 C 501.2 -54.6 455.4 -42.4 407.9 -32.6 C 360.3 -22.9 311.3 -15.6 268.0 -10.6 C 224.7 -5.6 187.4 -2.9 161.4 -1.5"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -335.0 -190.8 L -303.3 -203.6" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line outer edge-extension" d="M 63.2 -2.0 C 27.7 -3.9 -23.5 -7.7 -82.7 -14.6 C -142.0 -21.4 -209.2 -31.4 -274.3 -44.7 C -339.4 -58.0 -402.2 -74.7 -452.7 -94.1 C -503.2 -113.5 -541.3 -135.4 -559.9 -158.4 C -578.4 -181.4 -577.3 -205.3 -554.2 -228.1 C -531.1 -250.9 -486.0 -272.5 -422.1 -290.9 C -358.2 -309.2 -275.6 -324.2 -182.0 -334.4 C -88.5 -344.6 15.7 -350.0 120.0 -350.0 C 224.3 -350.0 328.5 -344.6 422.0 -334.4 C 515.6 -324.2 598.2 -309.2 662.1 -290.9 C 726.0 -272.5 771.1 -250.9 794.2 -228.1 C 817.3 -205.3 818.4 -181.4 799.9 -158.4 C 781.3 -135.4 743.2 -113.5 692.7 -94.1 C 642.2 -74.7 579.4 -58.0 514.3 -44.7 C 449.2 -31.4 382.0 -21.4 322.7 -14.6 C 263.5 -7.7 212.3 -3.9 176.8 -2.0"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -391.5 -73.5 L -439.4 -89.2" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line outer edge-extension" d="M 34.9 -3.0 C -18.5 -5.9 -95.2 -11.6 -184.1 -21.8 C -273.0 -32.1 -373.8 -47.0 -471.5 -67.0 C -569.1 -87.0 -663.3 -112.1 -739.1 -141.1 C -814.8 -170.2 -872.0 -203.2 -899.8 -237.6 C -927.6 -272.1 -925.9 -308.0 -891.3 -342.2 C -856.7 -376.4 -789.0 -408.8 -693.2 -436.3 C -597.3 -463.8 -473.3 -486.3 -333.1 -501.6 C -192.8 -516.9 -36.5 -525.0 120.0 -525.0 C 276.5 -525.0 432.8 -516.9 573.1 -501.6 C 713.3 -486.3 837.3 -463.8 933.2 -436.3 C 1029.0 -408.8 1096.7 -376.4 1131.3 -342.2 C 1165.9 -308.0 1167.6 -272.1 1139.8 -237.6 C 1112.0 -203.2 1054.8 -170.2 979.1 -141.1 C 903.3 -112.1 809.1 -87.0 711.5 -67.0 C 613.8 -47.0 513.0 -32.1 424.1 -21.8 C 335.2 -11.6 258.5 -5.9 205.1 -3.0"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -368.0 -47.8 L -452.7 -63.3" marker-end="url(#fluxArrowForward)"/>
+
+          <!-- 下側：上側と同じ密度配置を反転した7本 -->
+          <path class="flux-line through-coil" d="M 98.4 0.8 C 84.9 1.5 65.5 2.9 43.0 5.5 C 20.4 8.1 -5.1 11.9 -29.8 17.0 C -54.6 22.0 -78.4 28.4 -97.6 35.8 C -116.8 43.1 -131.3 51.5 -138.3 60.2 C -145.4 68.9 -145.0 78.0 -136.2 86.7 C -127.4 95.4 -110.3 103.6 -86.0 110.5 C -61.7 117.5 -30.3 123.2 5.2 127.1 C 40.8 131.0 80.4 133.0 120.0 133.0 C 159.6 133.0 199.2 131.0 234.8 127.1 C 270.3 123.2 301.7 117.5 326.0 110.5 C 350.3 103.6 367.4 95.4 376.2 86.7 C 385.0 78.0 385.4 68.9 378.3 60.2 C 371.3 51.5 356.8 43.1 337.6 35.8 C 318.4 28.4 294.6 22.0 269.8 17.0 C 245.1 11.9 219.6 8.1 197.0 5.5 C 174.5 2.9 155.1 1.5 141.6 0.8"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -117.1 44.4 L -128.8 51.5" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line through-coil" d="M 93.9 0.9 C 77.5 1.8 54.0 3.5 26.7 6.7 C -0.5 9.9 -31.4 14.4 -61.4 20.6 C -91.3 26.7 -120.2 34.4 -143.4 43.3 C -166.7 52.2 -184.2 62.3 -192.7 72.9 C -201.3 83.4 -200.8 94.5 -190.1 104.9 C -179.5 115.4 -158.8 125.4 -129.4 133.8 C -100.0 142.2 -62.0 149.1 -18.9 153.8 C 24.1 158.5 72.0 161.0 120.0 161.0 C 168.0 161.0 215.9 158.5 258.9 153.8 C 302.0 149.1 340.0 142.2 369.4 133.8 C 398.8 125.4 419.5 115.4 430.1 104.9 C 440.8 94.5 441.3 83.4 432.7 72.9 C 424.2 62.3 406.7 52.2 383.4 43.3 C 360.2 34.4 331.3 26.7 301.4 20.6 C 271.4 14.4 240.5 9.9 213.3 6.7 C 186.0 3.5 162.5 1.8 146.1 0.9"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -191.4 71.3 L -197.3 80.4" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line through-coil" d="M 89.3 1.1 C 70.2 2.1 42.5 4.2 10.5 7.9 C -21.5 11.6 -57.8 16.9 -92.9 24.1 C -128.1 31.3 -162.0 40.4 -189.3 50.8 C -216.5 61.3 -237.1 73.1 -247.1 85.5 C -257.1 98.0 -256.5 110.9 -244.1 123.2 C -231.6 135.5 -207.3 147.2 -172.7 157.1 C -138.2 167.0 -93.6 175.1 -43.1 180.6 C 7.4 186.1 63.7 189.0 120.0 189.0 C 176.3 189.0 232.6 186.1 283.1 180.6 C 333.6 175.1 378.2 167.0 412.7 157.1 C 447.3 147.2 471.6 135.5 484.1 123.2 C 496.5 110.9 497.1 98.0 487.1 85.5 C 477.1 73.1 456.5 61.3 429.3 50.8 C 402.0 40.4 368.1 31.3 332.9 24.1 C 297.8 16.9 261.5 11.6 229.5 7.9 C 197.5 4.2 169.8 2.1 150.7 1.1"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -254.0 105.3 L -249.9 116.2" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line outer" d="M 84.8 1.2 C 62.8 2.4 31.1 4.8 -5.7 9.0 C -42.4 13.3 -84.1 19.4 -124.5 27.7 C -164.8 36.0 -203.8 46.3 -235.1 58.3 C -266.4 70.3 -290.0 84.0 -301.5 98.2 C -313.0 112.5 -312.3 127.3 -298.0 141.4 C -283.7 155.6 -255.7 169.0 -216.1 180.3 C -176.5 191.7 -125.2 201.0 -67.3 207.3 C -9.3 213.7 55.3 217.0 120.0 217.0 C 184.7 217.0 249.3 213.7 307.3 207.3 C 365.2 201.0 416.5 191.7 456.1 180.3 C 495.7 169.0 523.7 155.6 538.0 141.4 C 552.3 127.3 553.0 112.5 541.5 98.2 C 530.0 84.0 506.4 70.3 475.1 58.3 C 443.8 46.3 404.8 36.0 364.5 27.7 C 324.1 19.4 282.4 13.3 245.7 9.0 C 208.9 4.8 177.2 2.4 155.2 1.2"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -293.3 145.7 L -275.4 157.5" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line outer" d="M 78.6 1.5 C 52.6 2.9 15.3 5.6 -28.0 10.6 C -71.3 15.6 -120.3 22.9 -167.9 32.6 C -215.4 42.4 -261.2 54.6 -298.1 68.7 C -335.0 82.8 -362.8 98.9 -376.3 115.6 C -389.8 132.4 -389.0 149.9 -372.2 166.5 C -355.3 183.2 -322.4 198.9 -275.7 212.3 C -229.1 225.7 -168.8 236.7 -100.5 244.1 C -32.2 251.6 43.9 255.5 120.0 255.5 C 196.1 255.5 272.2 251.6 340.5 244.1 C 408.8 236.7 469.1 225.7 515.7 212.3 C 562.4 198.9 595.3 183.2 612.2 166.5 C 629.0 149.9 629.8 132.4 616.3 115.6 C 602.8 98.9 575.0 82.8 538.1 68.7 C 501.2 54.6 455.4 42.4 407.9 32.6 C 360.3 22.9 311.3 15.6 268.0 10.6 C 224.7 5.6 187.4 2.9 161.4 1.5"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -335.0 190.8 L -303.3 203.6" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line outer edge-extension" d="M 63.2 2.0 C 27.7 3.9 -23.5 7.7 -82.7 14.6 C -142.0 21.4 -209.2 31.4 -274.3 44.7 C -339.4 58.0 -402.2 74.7 -452.7 94.1 C -503.2 113.5 -541.3 135.4 -559.9 158.4 C -578.4 181.4 -577.3 205.3 -554.2 228.1 C -531.1 250.9 -486.0 272.5 -422.1 290.9 C -358.2 309.2 -275.6 324.2 -182.0 334.4 C -88.5 344.6 15.7 350.0 120.0 350.0 C 224.3 350.0 328.5 344.6 422.0 334.4 C 515.6 324.2 598.2 309.2 662.1 290.9 C 726.0 272.5 771.1 250.9 794.2 228.1 C 817.3 205.3 818.4 181.4 799.9 158.4 C 781.3 135.4 743.2 113.5 692.7 94.1 C 642.2 74.7 579.4 58.0 514.3 44.7 C 449.2 31.4 382.0 21.4 322.7 14.6 C 263.5 7.7 212.3 3.9 176.8 2.0"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -391.5 73.5 L -439.4 89.2" marker-end="url(#fluxArrowForward)"/>
+          <path class="flux-line outer edge-extension" d="M 34.9 3.0 C -18.5 5.9 -95.2 11.6 -184.1 21.8 C -273.0 32.1 -373.8 47.0 -471.5 67.0 C -569.1 87.0 -663.3 112.1 -739.1 141.1 C -814.8 170.2 -872.0 203.2 -899.8 237.6 C -927.6 272.1 -925.9 308.0 -891.3 342.2 C -856.7 376.4 -789.0 408.8 -693.2 436.3 C -597.3 463.8 -473.3 486.3 -333.1 501.6 C -192.8 516.9 -36.5 525.0 120.0 525.0 C 276.5 525.0 432.8 516.9 573.1 501.6 C 713.3 486.3 837.3 463.8 933.2 436.3 C 1029.0 408.8 1096.7 376.4 1131.3 342.2 C 1165.9 308.0 1167.6 272.1 1139.8 237.6 C 1112.0 203.2 1054.8 170.2 979.1 141.1 C 903.3 112.1 809.1 87.0 711.5 67.0 C 613.8 47.0 513.0 32.1 424.1 21.8 C 335.2 11.6 258.5 5.9 205.1 3.0"/>
+          <path class="flux-arrow-guide" data-flux-arrow d="M -368.0 47.8 L -452.7 63.3" marker-end="url(#fluxArrowForward)"/>
+        </g>
+
+        <g id="leadLayer" transform="translate(-80 0)" aria-hidden="true">
+          <path d="M 310 420 C 310 444 294 455 285 478" fill="none" stroke="#54200d" stroke-width="20" stroke-linecap="round"/>
+          <path d="M 310 420 C 310 444 294 455 285 478" fill="none" stroke="url(#copperStroke)" stroke-width="14" stroke-linecap="round"/>
+          <path d="M 470 420 C 470 444 486 455 495 478" fill="none" stroke="#54200d" stroke-width="20" stroke-linecap="round"/>
+          <path d="M 470 420 C 470 444 486 455 495 478" fill="none" stroke="url(#copperStroke)" stroke-width="14" stroke-linecap="round"/>
+        </g>
+
+        <g id="magnet" role="slider" tabindex="0" aria-label="左右に動かせる棒磁石" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60">
+          <g transform="translate(26.4 0) scale(0.78)">
+            <rect class="magnet-focus" x="-6" y="-51" width="252" height="102" rx="17" fill="none" stroke="#fff" stroke-width="5" opacity="0"/>
+            <g filter="url(#largeShadow)">
+              <rect x="0" y="-45" width="240" height="90" rx="12" fill="#273d56"/>
+              <g clip-path="url(#magnetClip)">
+                <rect id="leftPoleFill" x="3" y="-42" width="117" height="84" fill="url(#redMagnet)"/>
+                <rect id="rightPoleFill" x="120" y="-42" width="117" height="84" fill="url(#blueMagnet)"/>
+                <path d="M 12 -31 H 228" fill="none" stroke="#fff" stroke-width="5" opacity="0.22" stroke-linecap="round"/>
+              </g>
+              <line x1="120" y1="-38" x2="120" y2="38" stroke="#173352" stroke-width="2" opacity="0.7"/>
+              <text id="leftPoleText" x="60" y="14" text-anchor="middle" fill="#fff" font-size="43" font-weight="700" font-family="system-ui, sans-serif">N</text>
+              <text id="rightPoleText" x="180" y="14" text-anchor="middle" fill="#fff" font-size="43" font-weight="700" font-family="system-ui, sans-serif">S</text>
+            </g>
+            <rect x="-12" y="-58" width="264" height="116" fill="transparent"/>
+          </g>
+        </g>
+
+        <g id="coilFront" aria-hidden="true"></g>
+        <g id="currentArrowLayer" aria-label="誘導電流の向き"></g>
+
+        <g id="inducedFieldLayer" aria-label="コイル内磁場の向き" opacity="0">
+          <path id="inducedFieldArrow" d="M -56 -7 H 24 V -16 L 56 0 L 24 16 V 7 H -56 Z" transform="translate(310 270)" fill="#72e387" stroke="#245f35" stroke-width="2.5" stroke-linejoin="round"/>
+        </g>
+
+        <g id="meter" transform="translate(-80 0)" aria-label="中央ゼロ型検流計">
+          <g filter="url(#largeShadow)">
+            <rect x="245" y="490" width="290" height="168" rx="15" fill="url(#meterBody)" stroke="#66717d" stroke-width="3"/>
+            <rect x="260" y="505" width="260" height="135" rx="8" fill="#f8f9fa" stroke="#9ea7b0" stroke-width="2"/>
+          </g>
+          <g>
+            <rect x="269" y="474" width="32" height="22" rx="4" fill="#20252b" stroke="#060708" stroke-width="3"/>
+            <rect x="479" y="474" width="32" height="22" rx="4" fill="#dc2c26" stroke="#8e1713" stroke-width="3"/>
+            <rect x="274" y="476" width="22" height="5" fill="#fff" opacity="0.4"/>
+            <rect x="484" y="476" width="22" height="5" fill="#fff" opacity="0.4"/>
+          </g>
+          <path d="M 296 607 A 94 70 0 0 1 484 607" fill="none" stroke="#4d5660" stroke-width="4"/>
+          <g stroke="#59636d" stroke-linecap="round">
+            <line x1="309" y1="583" x2="322" y2="587" stroke-width="3"/>
+            <line x1="341" y1="550" x2="349" y2="560" stroke-width="2"/>
+            <line x1="390" y1="539" x2="390" y2="552" stroke-width="3"/>
+            <line x1="439" y1="550" x2="431" y2="560" stroke-width="2"/>
+            <line x1="471" y1="583" x2="458" y2="587" stroke-width="3"/>
+          </g>
+          <text x="390" y="526" text-anchor="middle" font-size="17" font-weight="700" fill="#20262d">0</text>
+          <text x="330" y="624" text-anchor="middle" font-size="22" font-weight="700" fill="#20262d">−</text>
+          <text x="450" y="624" text-anchor="middle" font-size="22" font-weight="700" fill="#20262d">＋</text>
+          <g id="needle" transform="rotate(0 390 610)">
+            <line x1="390" y1="610" x2="390" y2="542" stroke="#e51f1a" stroke-width="5" stroke-linecap="round"/>
+          </g>
+          <circle cx="390" cy="610" r="15" fill="#4c555f" stroke="#252b31" stroke-width="3"/>
+          <circle cx="385" cy="605" r="5" fill="#fff" opacity="0.35"/>
+        </g>
+      </svg>
+    </section>
+
+    <aside class="control-panel" aria-label="操作パネル">
+      <p class="drag-hint">棒磁石を左右にドラッグ</p>
+      <div class="drag-symbol" aria-hidden="true"><span>←</span><span class="hand">☝</span><span>→</span></div>
+
+      <div class="display-options">
+        <label class="option-row">
+          <input id="showFlux" type="checkbox">
+          <span>磁束線</span>
+          <svg class="sample-icon" viewBox="0 0 52 34" aria-hidden="true">
+            <ellipse cx="26" cy="17" rx="20" ry="10" fill="none" stroke="#2f7fbc" stroke-width="1.7"/>
+            <ellipse cx="26" cy="17" rx="14" ry="7" fill="none" stroke="#2f7fbc" stroke-width="1.7"/>
+            <path d="M4 17H48M26 4V30" stroke="#2f7fbc" stroke-width="1.3" opacity="0.8"/>
+          </svg>
+        </label>
+        <label class="option-row">
+          <input id="showCurrent" type="checkbox">
+          <span>電流の向き</span>
+          <svg class="sample-icon" viewBox="0 0 52 34" aria-hidden="true">
+            <path d="M3 10H31V4L49 17L31 30V24H3Z" fill="#ffe668" stroke="#4f4606" stroke-width="1.5"/>
+          </svg>
+        </label>
+        <label class="option-row">
+          <input id="showInduced" type="checkbox">
+          <span>コイル内磁場</span>
+          <svg class="sample-icon" viewBox="0 0 52 34" aria-hidden="true">
+            <path d="M3 10H31V4L49 17L31 30V24H3Z" fill="#72e387" stroke="#175f2e" stroke-width="1.5"/>
+          </svg>
+        </label>
+      </div>
+
+      <hr class="panel-divider">
+
+      <p class="pole-heading">棒磁石の極</p>
+      <button id="flipPole" class="pole-switch" type="button" aria-label="棒磁石の極を反転する">
+        <span id="panelLeftPole" class="pole-half north">N</span>
+        <span id="panelRightPole" class="pole-half south">S</span>
+      </button>
+
+      <button id="resetButton" class="reset-button" type="button"><span class="reset-icon" aria-hidden="true">↻</span>リセット</button>
+    </aside>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+
+      const geometry = {
+        coilAxisStart: 230,
+        coilAxisLength: 160,
+        coilCenterY: 270,
+        coilRadiusX: 48,
+        coilRadiusY: 150,
+        magnetY: 270,
+        magnetWidth: 187.2,
+        magnetMinX: 292,
+        magnetMaxX: 840,
+        magnetInitialX: 620,
+        referenceCoilX: 325
+      };
+
+      const state = {
+        magnetX: geometry.magnetInitialX,
+        facingPole: "N",
+        velocity: 0,
+        currentMagnitude: 0,
+        inducedFieldSign: 0,
+        dragging: false,
+        dragOffsetX: 0,
+        lastMoveX: geometry.magnetInitialX,
+        lastMoveTime: performance.now(),
+        lastMotionTime: 0,
+        showFlux: false,
+        showCurrent: false,
+        showInduced: false
+      };
+
+      const elements = {
+        svg: document.getElementById("simulation"),
+        fluxLayer: document.getElementById("fluxLayer"),
+        coilBack: document.getElementById("coilBack"),
+        coilFront: document.getElementById("coilFront"),
+        magnet: document.getElementById("magnet"),
+        leftPoleFill: document.getElementById("leftPoleFill"),
+        rightPoleFill: document.getElementById("rightPoleFill"),
+        leftPoleText: document.getElementById("leftPoleText"),
+        rightPoleText: document.getElementById("rightPoleText"),
+        currentArrowLayer: document.getElementById("currentArrowLayer"),
+        inducedFieldLayer: document.getElementById("inducedFieldLayer"),
+        inducedFieldArrow: document.getElementById("inducedFieldArrow"),
+        needle: document.getElementById("needle"),
+        showFlux: document.getElementById("showFlux"),
+        showCurrent: document.getElementById("showCurrent"),
+        showInduced: document.getElementById("showInduced"),
+        flipPole: document.getElementById("flipPole"),
+        panelLeftPole: document.getElementById("panelLeftPole"),
+        panelRightPole: document.getElementById("panelRightPole"),
+        resetButton: document.getElementById("resetButton")
+      };
+
+      const coilArrowProgress = [0.305, 0.405, 0.805, 0.905];
+      function clamp(value, minimum, maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+      }
+
+      function svgElement(name, attributes = {}) {
+        const node = document.createElementNS(SVG_NS, name);
+        Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+        return node;
+      }
+
+      function pointOnCoil(progress) {
+        const angle = Math.PI / 2 + Math.PI * 4 * progress;
+        return {
+          x: geometry.coilAxisStart + geometry.coilAxisLength * progress + geometry.coilRadiusX * Math.cos(angle),
+          y: geometry.coilCenterY + geometry.coilRadiusY * Math.sin(angle),
+          depth: Math.cos(angle)
+        };
+      }
+
+      function makePath(points) {
+        return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
+      }
+
+      function addCopperSegment(parent, points) {
+        const pathData = makePath(points);
+        parent.append(
+          svgElement("path", { d: pathData, class: "wire-segment", stroke: "#54200d", "stroke-width": 22 }),
+          svgElement("path", { d: pathData, class: "wire-segment", stroke: "url(#copperStroke)", "stroke-width": 15 }),
+          svgElement("path", { d: pathData, class: "wire-segment", stroke: "#ffd4a0", "stroke-width": 3.2, opacity: 0.5 })
+        );
+      }
+
+      function buildCoil() {
+        const backSegments = [];
+        const frontSegments = [];
+        let active = [];
+        let activeSide = null;
+        const steps = 280;
+
+        for (let index = 0; index <= steps; index += 1) {
+          const point = pointOnCoil(index / steps);
+          const side = point.depth >= 0 ? "front" : "back";
+          if (activeSide === null) {
+            activeSide = side;
+            active = [point];
+          } else if (side === activeSide) {
+            active.push(point);
+          } else {
+            if (active.length > 1) (activeSide === "front" ? frontSegments : backSegments).push(active);
+            active = [active[active.length - 1], point];
+            activeSide = side;
+          }
+        }
+
+        if (active.length > 1) (activeSide === "front" ? frontSegments : backSegments).push(active);
+        backSegments.forEach((segment) => addCopperSegment(elements.coilBack, segment));
+        frontSegments.forEach((segment) => addCopperSegment(elements.coilFront, segment));
+      }
+
+      function arrowAngleAt(progress, direction) {
+        const epsilon = 0.001;
+        const before = pointOnCoil(clamp(progress - epsilon, 0, 1));
+        const after = pointOnCoil(clamp(progress + epsilon, 0, 1));
+        const dx = (after.x - before.x) * direction;
+        const dy = (after.y - before.y) * direction;
+        return Math.atan2(dy, dx) * 180 / Math.PI;
+      }
+
+      function createCurrentArrow(x, y, angle) {
+        const group = svgElement("g", { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle.toFixed(1)})` });
+        group.append(svgElement("path", {
+          d: "M -16 -6 L 3 -6 L 3 -11 L 17 0 L 3 11 L 3 6 L -16 6 Z",
+          class: "current-arrow"
+        }));
+        return group;
+      }
+
+      function updateCurrentArrows() {
+        elements.currentArrowLayer.replaceChildren();
+        if (!state.showCurrent || state.currentMagnitude <= 0.015) return;
+
+        const coilDirection = state.inducedFieldSign > 0 ? -1 : 1;
+        coilArrowProgress.forEach((progress) => {
+          const point = pointOnCoil(progress);
+          elements.currentArrowLayer.append(createCurrentArrow(point.x, point.y, arrowAngleAt(progress, coilDirection)));
+        });
+
+        const leftLeadDirection = state.inducedFieldSign > 0 ? 1 : -1;
+        const rightLeadDirection = -leftLeadDirection;
+        elements.currentArrowLayer.append(
+          createCurrentArrow(221, 451, leftLeadDirection > 0 ? 105 : -75),
+          createCurrentArrow(399, 451, rightLeadDirection > 0 ? 75 : 255)
+        );
+      }
+
+      function updateFluxLayer() {
+        elements.fluxLayer.setAttribute("transform", `translate(${state.magnetX} ${geometry.magnetY})`);
+        elements.fluxLayer.style.opacity = state.showFlux ? "1" : "0";
+        const marker = state.facingPole === "N" ? "url(#fluxArrowForward)" : "url(#fluxArrowBackward)";
+        elements.fluxLayer.querySelectorAll("[data-flux-arrow]").forEach((arrow) => arrow.setAttribute("marker-end", marker));
+      }
+
+      function updateMagnet() {
+        elements.magnet.setAttribute("transform", `translate(${state.magnetX} ${geometry.magnetY})`);
+        const positionPercent = Math.round((state.magnetX - geometry.magnetMinX) / (geometry.magnetMaxX - geometry.magnetMinX) * 100);
+        elements.magnet.setAttribute("aria-valuenow", String(positionPercent));
+      }
+
+      function updatePoleDisplay() {
+        const northFacesCoil = state.facingPole === "N";
+        elements.leftPoleFill.setAttribute("fill", northFacesCoil ? "url(#redMagnet)" : "url(#blueMagnet)");
+        elements.rightPoleFill.setAttribute("fill", northFacesCoil ? "url(#blueMagnet)" : "url(#redMagnet)");
+        elements.leftPoleText.textContent = northFacesCoil ? "N" : "S";
+        elements.rightPoleText.textContent = northFacesCoil ? "S" : "N";
+        elements.panelLeftPole.textContent = northFacesCoil ? "N" : "S";
+        elements.panelRightPole.textContent = northFacesCoil ? "S" : "N";
+        elements.panelLeftPole.className = `pole-half ${northFacesCoil ? "north" : "south"}`;
+        elements.panelRightPole.className = `pole-half ${northFacesCoil ? "south" : "north"}`;
+        elements.flipPole.setAttribute("aria-label", `棒磁石の極を反転する。現在は${state.facingPole}極がコイル側`);
+      }
+
+      function calculateInduction() {
+        if (Math.abs(state.velocity) < 5) {
+          state.currentMagnitude = 0;
+          state.inducedFieldSign = 0;
+          return;
+        }
+
+        const facingPoleCenter = state.magnetX + 18;
+        const distance = Math.abs(facingPoleCenter - geometry.referenceCoilX);
+        const speedFactor = clamp(Math.abs(state.velocity) / 780, 0, 1);
+        const distanceFactor = 0.12 + 0.88 / (1 + Math.pow(distance / 150, 2.35));
+        const sourceFieldSign = state.facingPole === "N" ? -1 : 1;
+
+        state.currentMagnitude = clamp(speedFactor * distanceFactor, 0, 1);
+        state.inducedFieldSign = sourceFieldSign * Math.sign(state.velocity);
+      }
+
+      function updateInducedField() {
+        const visible = state.showInduced && state.inducedFieldSign !== 0;
+        elements.inducedFieldLayer.style.opacity = visible ? "1" : "0";
+        if (!visible) return;
+
+        const angle = state.inducedFieldSign > 0 ? 0 : 180;
+        elements.inducedFieldArrow.setAttribute("transform", `translate(310 270) rotate(${angle})`);
+      }
+
+      function updateMeter() {
+        const meterSign = -state.inducedFieldSign;
+        const angle = state.currentMagnitude > 0.015 ? meterSign * state.currentMagnitude * 52 : 0;
+        elements.needle.setAttribute("transform", `rotate(${angle.toFixed(2)} 390 610)`);
+      }
+
+      function render() {
+        updateMagnet();
+        updateFluxLayer();
+        updateCurrentArrows();
+        updateInducedField();
+        updateMeter();
+      }
+
+      function eventPoint(event) {
+        const point = elements.svg.createSVGPoint();
+        point.x = event.clientX;
+        point.y = event.clientY;
+        return point.matrixTransform(elements.svg.getScreenCTM().inverse());
+      }
+
+      function setMagnetPosition(nextX, timestamp) {
+        const clampedX = clamp(nextX, geometry.magnetMinX, geometry.magnetMaxX);
+        const elapsedSeconds = Math.max((timestamp - state.lastMoveTime) / 1000, 1 / 120);
+        const measuredVelocity = (clampedX - state.lastMoveX) / elapsedSeconds;
+        state.velocity = state.velocity * 0.24 + measuredVelocity * 0.76;
+        state.magnetX = clampedX;
+        state.lastMoveX = clampedX;
+        state.lastMoveTime = timestamp;
+        state.lastMotionTime = timestamp;
+        calculateInduction();
+        render();
+      }
+
+      function stopMotion() {
+        state.velocity = 0;
+        state.currentMagnitude = 0;
+        state.inducedFieldSign = 0;
+        render();
+      }
+
+      elements.magnet.addEventListener("pointerdown", (event) => {
+        const point = eventPoint(event);
+        state.dragging = true;
+        state.dragOffsetX = point.x - state.magnetX;
+        state.lastMoveX = state.magnetX;
+        state.lastMoveTime = event.timeStamp;
+        state.velocity = 0;
+        elements.magnet.classList.add("dragging");
+        elements.magnet.setPointerCapture(event.pointerId);
+      });
+
+      elements.magnet.addEventListener("pointermove", (event) => {
+        if (!state.dragging) return;
+        const point = eventPoint(event);
+        setMagnetPosition(point.x - state.dragOffsetX, event.timeStamp);
+      });
+
+      function endDrag(event) {
+        if (!state.dragging) return;
+        state.dragging = false;
+        elements.magnet.classList.remove("dragging");
+        if (elements.magnet.hasPointerCapture(event.pointerId)) elements.magnet.releasePointerCapture(event.pointerId);
+        stopMotion();
+      }
+
+      elements.magnet.addEventListener("pointerup", endDrag);
+      elements.magnet.addEventListener("pointercancel", endDrag);
+
+      elements.magnet.addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        event.preventDefault();
+        const direction = event.key === "ArrowLeft" ? -1 : 1;
+        const timestamp = performance.now();
+        setMagnetPosition(state.magnetX + direction * 12, timestamp);
+        window.clearTimeout(elements.magnet.keyboardStopTimer);
+        elements.magnet.keyboardStopTimer = window.setTimeout(stopMotion, 90);
+      });
+
+      elements.flipPole.addEventListener("click", () => {
+        state.facingPole = state.facingPole === "N" ? "S" : "N";
+        updatePoleDisplay();
+        calculateInduction();
+        render();
+      });
+
+      elements.showFlux.addEventListener("change", () => {
+        state.showFlux = elements.showFlux.checked;
+        render();
+      });
+
+      elements.showCurrent.addEventListener("change", () => {
+        state.showCurrent = elements.showCurrent.checked;
+        render();
+      });
+
+      elements.showInduced.addEventListener("change", () => {
+        state.showInduced = elements.showInduced.checked;
+        render();
+      });
+
+      elements.resetButton.addEventListener("click", () => {
+        state.magnetX = geometry.magnetInitialX;
+        state.facingPole = "N";
+        state.velocity = 0;
+        state.currentMagnitude = 0;
+        state.inducedFieldSign = 0;
+        state.dragging = false;
+        state.lastMoveX = geometry.magnetInitialX;
+        state.lastMoveTime = performance.now();
+        state.showFlux = false;
+        state.showCurrent = false;
+        state.showInduced = false;
+        elements.showFlux.checked = false;
+        elements.showCurrent.checked = false;
+        elements.showInduced.checked = false;
+        elements.magnet.classList.remove("dragging");
+        updatePoleDisplay();
+        render();
+      });
+
+      function animationLoop(timestamp) {
+        if (state.dragging && timestamp - state.lastMotionTime > 65 && state.currentMagnitude !== 0) stopMotion();
+        requestAnimationFrame(animationLoop);
+      }
+
+      buildCoil();
+      updatePoleDisplay();
+      render();
+      requestAnimationFrame(animationLoop);
+    })();
+  </script>
+</body>
+</html>

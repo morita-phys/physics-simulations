@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>電流に対して垂直に磁場を加えるとどうなるだろう？</title>
+<style>
+:root{color-scheme:light;--ink:#18212a;--muted:#66717d;--line:#d6dce2;--page:#f5f7f9;--blue:#1263ad;--green:#149447;--green-dark:#0d7437;--axis-x:#d75522;--axis-z:#245fa8;--radius:10px;--shadow:0 2px 8px rgba(25,38,52,.08)}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{color:var(--ink);background:var(--page);font-family:"BIZ UDPGothic","Yu Gothic UI",Meiryo,system-ui,sans-serif}
+button,input{font:inherit}button{min-height:36px;border:1px solid #c9d0d7;border-radius:8px;color:var(--ink);background:#fff;font-weight:700;cursor:pointer;transition:.12s}button:hover{border-color:#87939f}button:active{transform:translateY(1px)}button:focus-visible,input:focus-visible{outline:3px solid rgba(20,148,71,.28);outline-offset:2px}
+.app{width:100%;height:100dvh;max-width:1600px;margin:auto;padding:10px 12px 12px;display:grid;grid-template-rows:auto minmax(0,1fr);gap:8px}.page-header{min-height:46px;display:flex;align-items:center;padding:0 4px}h1{margin:0;font-size:clamp(1.45rem,2.2vw,2rem);line-height:1.16}
+.layout{min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(286px,24vw,326px);gap:10px}.simulation-column{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.visual-card{position:relative;min-width:0;min-height:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}.view-label{position:absolute;z-index:3;top:10px;left:10px;margin:0;padding:6px 12px;border-radius:6px;color:#fff;background:var(--blue);font-size:.98rem;line-height:1;font-weight:800;pointer-events:none}.view-label.cross{background:var(--green)}
+canvas{position:absolute;inset:0;display:block;width:100%;height:100%}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.control-panel{min-width:0;min-height:0;overflow:auto;scrollbar-width:thin;border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}.panel-title{position:sticky;top:0;z-index:2;margin:0;padding:12px 16px 10px;border-bottom:1px solid #e2e6ea;background:rgba(255,255,255,.97);font-size:1.18rem}.panel-body{padding:8px 10px 10px;display:grid;gap:7px}.control-group{padding:9px 10px;border:1px solid #dde2e7;border-radius:9px;background:#fff}.group-heading{margin:0;font-size:.94rem;line-height:1.2}.group-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.sub-control{margin-top:9px}.sub-label{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:.82rem;font-weight:700;color:#313b46}.sub-label output{color:var(--green-dark);font-weight:800}
+.toggle{width:76px;min-height:32px;padding:3px 5px;border-color:#aeb8c1;border-radius:999px;display:grid;grid-template-columns:1fr 24px;align-items:center;gap:4px;color:#52606d;background:#e8ecef;font-size:.78rem;font-weight:900}.toggle:after{content:"";width:22px;height:22px;border:1px solid #aeb8c1;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}.toggle[aria-checked=true]{grid-template-columns:24px 1fr;color:#fff;border-color:var(--green);background:var(--green)}.toggle[aria-checked=true]:after{grid-column:1;grid-row:1;border-color:#fff}.toggle[aria-checked=true] .toggle-text{grid-column:2;grid-row:1}
+.segmented{display:grid;grid-template-columns:1fr 1fr;gap:6px}.segmented button{min-width:0;padding:7px 5px;font-size:.82rem;line-height:1.1}.segmented button[aria-pressed=true]{color:#fff;border-color:var(--green);background:var(--green);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.current-controls .toggle[aria-checked=true],.current-controls .segmented button[aria-pressed=true]{border-color:var(--axis-x);background:var(--axis-x)}.current-controls button:focus-visible{outline-color:rgba(215,85,34,.3)}
+.field-controls .toggle[aria-checked=true],.field-controls .segmented button[aria-pressed=true]{border-color:var(--axis-z);background:var(--axis-z)}.field-controls input[type=range]{accent-color:var(--axis-z)}.field-controls .sub-label output{color:var(--axis-z)}.field-controls button:focus-visible,.field-controls input:focus-visible{outline-color:rgba(36,95,168,.3)}
+input[type=range]{width:100%;height:20px;margin:0;accent-color:var(--green);cursor:pointer}.range-labels{display:flex;justify-content:space-between;margin-top:-2px;color:#3c4650;font-size:.74rem;font-weight:700}.check-list{margin-top:8px;display:grid;gap:7px}.check-row{display:flex;align-items:center;gap:7px;min-height:24px;color:#28333e;font-size:.83rem;font-weight:700;cursor:pointer}.check-row input{width:18px;height:18px;margin:0;flex:0 0 auto;accent-color:var(--green)}.reset-action{width:100%;min-height:40px;padding:8px 6px}
+@media(max-height:720px) and (min-width:981px){.app{padding-top:7px;gap:6px}.page-header{min-height:39px}h1{font-size:1.45rem}.panel-title{padding:9px 13px 8px;font-size:1.05rem}.panel-body{gap:5px;padding:6px 8px 8px}.control-group{padding:7px 8px}.sub-control{margin-top:6px}.check-list{margin-top:5px;gap:4px}.check-row{min-height:21px}}
+@media(max-width:980px){html,body{height:auto;overflow:auto}.app{height:auto;min-height:100vh}.layout{grid-template-columns:1fr}.simulation-column{grid-template-rows:360px 360px}.control-panel{overflow:visible}.panel-body{grid-template-columns:repeat(2,minmax(0,1fr))}.reset-action{align-self:end}}
+@media(max-width:620px){.app{padding:8px}h1{font-size:1.25rem}.simulation-column{grid-template-rows:330px 330px}.panel-body{grid-template-columns:1fr}.view-label{font-size:.84rem}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="page-header"><h1>電流に対して垂直に磁場を加えるとどうなるだろう？</h1></header>
+  <main class="layout">
+    <section class="simulation-column" aria-label="シミュレーション表示">
+      <section class="visual-card" aria-labelledby="threeDHeading">
+        <h2 id="threeDHeading" class="view-label">立体図（全体像）</h2>
+        <canvas id="threeDCanvas" role="img" aria-label="導体、電流、キャリア速度、磁場の立体的な位置関係"></canvas>
+        <p class="sr-only">導体内部のキャリアと、電流、磁場、座標軸を同時に示す立体図です。</p>
+      </section>
+      <section class="visual-card" aria-labelledby="crossHeading">
+        <h2 id="crossHeading" class="view-label cross">断面図（内部の様子）</h2>
+        <canvas id="crossCanvas" role="img" aria-label="導体内部のキャリア分布、表面電荷、電場、力を示す断面図"></canvas>
+        <p class="sr-only">上をプラスy、画面手前をプラスzとして、導体内部の変化を示す図です。</p>
+      </section>
+    </section>
+    <aside class="control-panel" aria-labelledby="panelHeading">
+      <h2 id="panelHeading" class="panel-title">操作パネル</h2>
+      <div class="panel-body">
+        <section class="control-group" aria-labelledby="carrierHeading">
+          <h3 id="carrierHeading" class="group-heading">キャリアの種類</h3>
+          <div class="sub-control"><div class="segmented" role="group" aria-label="キャリアの種類"><button type="button" data-carrier="electron" aria-pressed="true">電子（−）</button><button type="button" data-carrier="positive" aria-pressed="false">正電荷（＋）</button></div></div>
+        </section>
+        <section class="control-group current-controls" aria-labelledby="currentHeading">
+          <div class="group-top"><h3 id="currentHeading" class="group-heading">電流</h3><button id="currentToggle" class="toggle" type="button" role="switch" aria-checked="false"><span class="toggle-text">OFF</span></button></div>
+          <div class="sub-control"><div class="sub-label"><span>電流の向き</span></div><div class="segmented" role="group" aria-label="電流の向き"><button type="button" data-current-direction="1" aria-pressed="true">+x方向</button><button type="button" data-current-direction="-1" aria-pressed="false">−x方向</button></div></div>
+        </section>
+        <section class="control-group field-controls" aria-labelledby="fieldHeading">
+          <div class="group-top"><h3 id="fieldHeading" class="group-heading">磁場</h3><button id="fieldToggle" class="toggle" type="button" role="switch" aria-checked="false"><span class="toggle-text">OFF</span></button></div>
+          <div class="sub-control"><div class="sub-label"><span>磁場の向き</span></div><div class="segmented" role="group" aria-label="磁場の向き"><button type="button" data-field-direction="1" aria-pressed="true">+z方向</button><button type="button" data-field-direction="-1" aria-pressed="false">−z方向</button></div></div>
+          <div class="sub-control"><div class="sub-label"><label for="fieldStrength">磁場の強さ</label><output id="fieldStrengthOutput" for="fieldStrength">中</output></div><input id="fieldStrength" type="range" min="0.15" max="1" step="0.01" value="0.5"><div class="range-labels" aria-hidden="true"><span>弱い</span><span>中</span><span>強い</span></div></div>
+        </section>
+        <section class="control-group" aria-labelledby="displayHeading">
+          <h3 id="displayHeading" class="group-heading">表示の切替</h3>
+          <div class="check-list">
+            <label class="check-row" for="showSurfaceCharge"><input id="showSurfaceCharge" type="checkbox"><span>表面電荷表示</span></label>
+            <label class="check-row" for="showElectricField"><input id="showElectricField" type="checkbox"><span>電場ベクトル表示</span></label>
+            <label class="check-row" for="showRepresentative"><input id="showRepresentative" type="checkbox"><span>代表粒子・力ベクトル表示</span></label>
+          </div>
+        </section>
+        <button id="resetButton" class="reset-action" type="button">リセット</button>
+      </div>
+    </aside>
+  </main>
+</div>
+<script>
+"use strict";
+const C={ink:"#18212a",muted:"#65717e",edge:"#77838f",electron:"#1769aa",positive:"#d94b3d",current:"#d8341d",velocity:"#1e92c8",magnetic:"#5a2ca0",eField:"#159447",mForce:"#e58a00",eForce:"#d95c17",white:"#fff"};
+const INITIAL=Object.freeze({currentOn:false,currentDirection:1,fieldOn:false,fieldDirection:1,fieldStrength:.5,carrierType:"electron",showElectricField:false,showRepresentativeParticle:false,showSurfaceCharge:false});
+const state={...INITIAL};
+let polarization=0,previousTime=performance.now();
+const threeDCanvas=document.getElementById("threeDCanvas"),crossCanvas=document.getElementById("crossCanvas");
+const threeDCtx=threeDCanvas.getContext("2d"),crossCtx=crossCanvas.getContext("2d"),metrics=new Map();
+const ui={
+  currentToggle:document.getElementById("currentToggle"),fieldToggle:document.getElementById("fieldToggle"),
+  fieldStrength:document.getElementById("fieldStrength"),fieldStrengthOutput:document.getElementById("fieldStrengthOutput"),
+  showElectricField:document.getElementById("showElectricField"),showRepresentative:document.getElementById("showRepresentative"),
+  showSurfaceCharge:document.getElementById("showSurfaceCharge"),resetButton:document.getElementById("resetButton")
+};
+const fract=v=>v-Math.floor(v),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(i,s){return fract(Math.sin((i+1)*12.9898+s*78.233)*43758.5453123)}
+const particles=Array.from({length:90},(_,i)=>{const baseY=.12+.76*seeded(i,2);return{x:.035+.93*seeded(i,1),baseY,y:baseY,z:.12+.76*seeded(i,3),radius:4.1+(i%3)*.28,response:.78+(i%7)*.055,follow:1.5+(i%5)*.17}});
+function qSign(){return state.carrierType==="electron"?-1:1}
+function velocitySign(){return state.currentDirection*qSign()}
+function deflectionSign(){return-state.currentDirection*state.fieldDirection}
+function hallActive(){return state.currentOn&&state.fieldOn&&state.fieldStrength>.001}
+function hallMagnitude(){return clamp(Math.abs(polarization),0,1)}
+function accumulatedSide(){return Math.abs(polarization)<.002?0:Math.sign(polarization)}
+function topCharge(){return qSign()*accumulatedSide()}
+function electricFieldSign(){return-topCharge()}
+function strengthWord(v=state.fieldStrength){return v<.33?"弱い":v<.67?"中":"強い"}
+function setToggle(button,on){button.setAttribute("aria-checked",String(on));button.querySelector(".toggle-text").textContent=on?"ON":"OFF"}
+function updateUI(){
+  setToggle(ui.currentToggle,state.currentOn);setToggle(ui.fieldToggle,state.fieldOn);
+  ui.fieldStrength.value=String(state.fieldStrength);ui.fieldStrengthOutput.textContent=strengthWord();
+  ui.showElectricField.checked=state.showElectricField;ui.showRepresentative.checked=state.showRepresentativeParticle;ui.showSurfaceCharge.checked=state.showSurfaceCharge;
+  document.querySelectorAll("[data-current-direction]").forEach(b=>b.setAttribute("aria-pressed",String(Number(b.dataset.currentDirection)===state.currentDirection)));
+  document.querySelectorAll("[data-field-direction]").forEach(b=>b.setAttribute("aria-pressed",String(Number(b.dataset.fieldDirection)===state.fieldDirection)));
+  document.querySelectorAll("[data-carrier]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.carrier===state.carrierType)));
+}
+function bind(){
+  ui.currentToggle.addEventListener("click",()=>{state.currentOn=!state.currentOn;updateUI()});
+  ui.fieldToggle.addEventListener("click",()=>{state.fieldOn=!state.fieldOn;updateUI()});
+  document.querySelectorAll("[data-current-direction]").forEach(b=>b.addEventListener("click",()=>{state.currentDirection=Number(b.dataset.currentDirection);updateUI()}));
+  document.querySelectorAll("[data-field-direction]").forEach(b=>b.addEventListener("click",()=>{state.fieldDirection=Number(b.dataset.fieldDirection);updateUI()}));
+  document.querySelectorAll("[data-carrier]").forEach(b=>b.addEventListener("click",()=>{state.carrierType=b.dataset.carrier;updateUI()}));
+  ui.fieldStrength.addEventListener("input",()=>{state.fieldStrength=Number(ui.fieldStrength.value);updateUI()});
+  ui.showElectricField.addEventListener("change",()=>state.showElectricField=ui.showElectricField.checked);
+  ui.showRepresentative.addEventListener("change",()=>state.showRepresentativeParticle=ui.showRepresentative.checked);
+  ui.showSurfaceCharge.addEventListener("change",()=>state.showSurfaceCharge=ui.showSurfaceCharge.checked);
+  ui.resetButton.addEventListener("click",reset);
+}
+function reset(){
+  Object.assign(state,INITIAL);polarization=0;
+  particles.forEach((p,i)=>{p.x=.05+.90*seeded(i,1);p.y=p.baseY});
+  previousTime=performance.now();updateUI();
+}
+function resize(canvas,ctx){
+  const r=canvas.getBoundingClientRect();if(r.width<1||r.height<1)return;
+  const d=Math.min(devicePixelRatio||1,2),pw=Math.round(r.width*d),ph=Math.round(r.height*d);
+  if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph}
+  ctx.setTransform(d,0,0,d,0,0);metrics.set(canvas,{width:r.width,height:r.height});
+}
+function resizeAll(){resize(threeDCanvas,threeDCtx);resize(crossCanvas,crossCtx)}
+function rounded(ctx,x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+function background(ctx,w,h){const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,"#fff");g.addColorStop(1,"#f7f9fa");ctx.fillStyle=g;ctx.fillRect(0,0,w,h)}
+function arrow(ctx,x1,y1,x2,y2,color,label="",o={}){
+  const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);if(len<2)return;const a=Math.atan2(dy,dx),head=clamp(len*.18,7,o.head||14);
+  ctx.save();ctx.globalAlpha=o.alpha??1;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=o.width||3.2;ctx.lineCap="round";ctx.lineJoin="round";ctx.setLineDash(o.dash||[]);
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-head*Math.cos(a-Math.PI/6),y2-head*Math.sin(a-Math.PI/6));ctx.lineTo(x2-head*Math.cos(a+Math.PI/6),y2-head*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fill();
+  if(label){const lx=(x1+x2)/2+(o.labelX||0),ly=(y1+y2)/2+(o.labelY??-12);ctx.font="700 "+(o.fontSize||14)+"px 'Yu Gothic UI',Meiryo,sans-serif";ctx.textAlign=o.textAlign||"center";ctx.textBaseline="middle";ctx.lineWidth=4;ctx.strokeStyle="rgba(255,255,255,.94)";ctx.strokeText(label,lx,ly);ctx.fillText(label,lx,ly)}
+  ctx.restore();
+}
+function text(ctx,value,x,y,o={}){
+  ctx.save();ctx.globalAlpha=o.alpha??1;ctx.font=(o.weight||700)+" "+(o.size||14)+"px 'Yu Gothic UI',Meiryo,sans-serif";ctx.textAlign=o.align||"center";ctx.textBaseline=o.baseline||"middle";
+  if(o.halo!==false){ctx.lineWidth=4;ctx.strokeStyle=o.haloColor||"rgba(255,255,255,.94)";ctx.strokeText(value,x,y)}
+  ctx.fillStyle=o.color||C.ink;ctx.fillText(value,x,y);ctx.restore();
+}
+function particle(ctx,x,y,r,alpha=1,big=false){
+  const positive=state.carrierType==="positive";ctx.save();ctx.globalAlpha=alpha;ctx.shadowColor="rgba(16,30,45,.18)";ctx.shadowBlur=big?7:4;ctx.shadowOffsetY=1.5;ctx.fillStyle=positive?C.positive:C.electron;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.shadowColor="transparent";ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineWidth=big?1.8:1;ctx.stroke();ctx.fillStyle=C.white;ctx.font="800 "+Math.max(9,r*1.35)+"px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(positive?"+":"−",x,y-.5);ctx.restore();
+}
+function magneticMark(ctx,x,y,r,alpha=1){
+  if(!state.fieldOn||state.fieldStrength<=.001)return;ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=C.magnetic;ctx.fillStyle=C.magnetic;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();
+  if(state.fieldDirection===1){ctx.beginPath();ctx.arc(x,y,Math.max(2.2,r*.18),0,Math.PI*2);ctx.fill()}else{const d=r*.48;ctx.beginPath();ctx.moveTo(x-d,y-d);ctx.lineTo(x+d,y+d);ctx.moveTo(x+d,y-d);ctx.lineTo(x-d,y+d);ctx.stroke()}ctx.restore();
+}
+function project(o,ex,ey,ez,x,y,z){return{x:o.x+ex.x*x+ey.x*y+ez.x*z,y:o.y+ex.y*x+ey.y*y+ez.y*z}}
+function polygon(ctx,points){ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.closePath()}
+function field3D(ctx,o,ex,ey,ez){
+  if(!state.fieldOn)return;const span=.25+.55*state.fieldStrength,lowZ=.5-span,highZ=.5+span;
+  [.16,.34,.52,.70,.88].forEach((x,i)=>{const y=i%2===0?.28:.72,low=project(o,ex,ey,ez,x,y,lowZ),high=project(o,ex,ey,ez,x,y,highZ);if(state.fieldDirection===1)arrow(ctx,low.x,low.y,high.x,high.y,C.magnetic,"",{width:3.4,alpha:.74});else arrow(ctx,high.x,high.y,low.x,low.y,C.magnetic,"",{width:3.4,alpha:.74})});
+  const p=project(o,ex,ey,ez,.78,.20,1.48);text(ctx,state.fieldDirection===1?"磁場 B（+z）":"磁場 B（−z）",p.x,p.y,{color:C.magnetic,size:14});
+}
+function axes3D(ctx,w,h){
+  const x=Math.max(52,w*.075),y=h-34;arrow(ctx,x,y,x+54,y,"#d75522","x",{width:2.4,labelY:13,fontSize:13});arrow(ctx,x,y,x-34,y-31,"#158447","y",{width:2.4,labelX:-8,labelY:-8,fontSize:13});arrow(ctx,x,y,x,y-52,"#245fa8","z",{width:2.4,labelX:12,labelY:-7,fontSize:13});
+}
+function draw3D(){
+  const m=metrics.get(threeDCanvas);if(!m)return;const w=m.width,h=m.height,ctx=threeDCtx;ctx.clearRect(0,0,w,h);background(ctx,w,h);
+  const o={x:w*.20,y:h*.80},ex={x:w*.62,y:0},ey={x:-Math.min(w*.105,h*.32),y:-Math.min(w*.065,h*.21)},ez={x:0,y:-h*.30};
+  const a=project(o,ex,ey,ez,0,0,0),b=project(o,ex,ey,ez,1,0,0),c=project(o,ex,ey,ez,0,1,0),d=project(o,ex,ey,ez,1,1,0),A=project(o,ex,ey,ez,0,0,1),B=project(o,ex,ey,ez,1,0,1),C1=project(o,ex,ey,ez,0,1,1),D=project(o,ex,ey,ez,1,1,1);
+  field3D(ctx,o,ex,ey,ez);
+  ctx.save();polygon(ctx,[c,d,D,C1]);ctx.fillStyle="rgba(210,218,225,.34)";ctx.fill();polygon(ctx,[a,c,C1,A]);ctx.fillStyle="rgba(206,214,221,.52)";ctx.fill();ctx.restore();
+  [...particles].sort((p1,p2)=>p1.y-p2.y).forEach(p=>{const v=project(o,ex,ey,ez,p.x,p.y,p.z);particle(ctx,v.x,v.y,p.radius,.94)});
+  ctx.save();polygon(ctx,[a,b,B,A]);ctx.fillStyle="rgba(220,226,231,.50)";ctx.fill();polygon(ctx,[A,B,D,C1]);ctx.fillStyle="rgba(238,242,245,.48)";ctx.fill();ctx.strokeStyle=C.edge;ctx.lineWidth=1.5;[[a,b,B,A],[A,B,D,C1],[a,c,C1,A],[b,d,D,B]].forEach(face=>{polygon(ctx,face);ctx.stroke()});ctx.setLineDash([6,5]);ctx.globalAlpha=.55;ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(d.x,d.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();
+  if(state.currentOn){
+    const y=o.y+25,left=a.x-12,right=b.x+26;if(state.currentDirection===1)arrow(ctx,left,y,right,y,C.current,"電流 I",{width:5,labelY:-15,fontSize:15});else arrow(ctx,right,y,left,y,C.current,"電流 I",{width:5,labelY:-15,fontSize:15});
+    const vy=Math.max(62,C1.y-23),x1=A.x+w*.12,x2=A.x+w*.31;if(velocitySign()===1)arrow(ctx,x1,vy,x2,vy,C.velocity,"キャリア速度 v",{width:3.3,labelY:-13});else arrow(ctx,x2,vy,x1,vy,C.velocity,"キャリア速度 v",{width:3.3,labelY:-13});
+  }
+  if(state.showElectricField&&hallMagnitude()>.01&&electricFieldSign()){
+    const center=project(o,ex,ey,ez,.78,.5,.58),l=Math.hypot(ey.x,ey.y),ux=ey.x/l,uy=ey.y/l,len=clamp(w*.10*hallMagnitude(),20,w*.12),s=electricFieldSign();
+    arrow(ctx,center.x-ux*s*len/2,center.y-uy*s*len/2,center.x+ux*s*len/2,center.y+uy*s*len/2,C.eField,"電場ベクトル",{width:4,labelX:25,labelY:-12,fontSize:13});
+  }
+  text(ctx,"+y",C1.x-10,C1.y-14,{color:C.muted,size:12});text(ctx,"−y",A.x-16,A.y+14,{color:C.muted,size:12});axes3D(ctx,w,h);
+}
+function surfaceCharges(ctx,r){
+  if(!state.showSurfaceCharge||hallMagnitude()<.015||!accumulatedSide())return;const top=topCharge(),ts=top>0?"+":"−",bs=top>0?"−":"+",tc=top>0?C.positive:C.electron,bc=top>0?C.electron:C.positive,alpha=clamp(.12+hallMagnitude()*.88,0,1);
+  for(let i=0;i<10;i++){const x=r.x+(i+.5)*r.width/10;text(ctx,ts,x,r.y-16,{color:tc,size:20,alpha});text(ctx,bs,x,r.y+r.height+17,{color:bc,size:20,alpha})}
+}
+function crossAxes(ctx,w,h){
+  const x=w-62,y=49;arrow(ctx,x,y,x+30,y,"#d75522","x",{width:2.2,labelY:12,fontSize:12});arrow(ctx,x,y,x,y-30,"#158447","y",{width:2.2,labelX:12,labelY:-5,fontSize:12});magneticMark(ctx,x-27,y,8,1);text(ctx,state.fieldDirection===1?"z":"−z",x-42,y,{color:"#245fa8",size:12});
+}
+function crossElectric(ctx,r){
+  if(!state.showElectricField||hallMagnitude()<.012||!electricFieldSign())return;const len=r.height*.62*hallMagnitude(),x=r.x+r.width*.34,y=r.y+r.height*.5,s=electricFieldSign();
+  arrow(ctx,x,y+s*len/2,x,y-s*len/2,C.eField,"電場ベクトル",{width:5,labelX:54,labelY:0,fontSize:14});
+}
+function forcesBalanced(){
+  return hallActive()&&accumulatedSide()===deflectionSign()&&Math.abs(hallMagnitude()-state.fieldStrength)<.012;
+}
+function representative(ctx,r,w){
+  if(!state.showRepresentativeParticle)return;
+  const left=r.x+r.width+10,right=w-10,boxW=right-left,top=r.y,boxH=r.height,x=left+boxW*.5,y=top+boxH*.54,scale=Math.min(58,boxH*.29);
+  ctx.save();ctx.fillStyle="rgba(255,255,255,.88)";ctx.strokeStyle="rgba(102,113,125,.46)";ctx.setLineDash([4,4]);rounded(ctx,left,top,boxW,boxH,10);ctx.fill();ctx.stroke();ctx.restore();
+  text(ctx,"代表粒子",x,top+17,{color:C.muted,size:12});particle(ctx,x,y,13,1,true);
+  if(state.currentOn){const s=velocitySign(),len=Math.min(30,boxW*.24),vx=left+boxW*.25;arrow(ctx,vx-s*len/2,top+42,vx+s*len/2,top+42,C.velocity,"v",{width:3,labelY:-10,fontSize:12})}
+  if(state.currentOn&&state.fieldOn){
+    const ms=deflectionSign(),ml=scale*state.fieldStrength;arrow(ctx,x,y,x,y-ms*ml,C.mForce,"磁気力",{width:3.8,labelX:-29,labelY:0,fontSize:11});
+  }
+  if(hallMagnitude()>.008&&accumulatedSide()){
+    const es=qSign()*electricFieldSign(),el=scale*hallMagnitude();arrow(ctx,x,y,x,y-es*el,C.eForce,"電気力",{width:3,labelX:29,labelY:0,fontSize:11,dash:forcesBalanced()?[]:[5,4]});
+  }
+  if(forcesBalanced())text(ctx,"力がつり合う",x,top+boxH-13,{color:C.ink,size:10});
+}
+function drawCross(){
+  const m=metrics.get(crossCanvas);if(!m)return;const w=m.width,h=m.height,ctx=crossCtx;ctx.clearRect(0,0,w,h);background(ctx,w,h);
+  const r={x:Math.max(66,w*.075),y:Math.max(55,h*.21),width:Math.max(320,w*.78),height:Math.max(145,h*.58)};if(r.x+r.width>w-90)r.width=w-r.x-90;if(r.y+r.height>h-28)r.height=h-r.y-28;
+  ctx.save();rounded(ctx,r.x,r.y,r.width,r.height,4);ctx.fillStyle="rgba(226,231,235,.54)";ctx.fill();ctx.strokeStyle=C.edge;ctx.lineWidth=1.6;ctx.stroke();ctx.clip();
+  if(state.fieldOn){const alpha=.18+.60*state.fieldStrength;for(let row=0;row<3;row++)for(let col=0;col<7;col++)magneticMark(ctx,r.x+(col+.5)*r.width/7,r.y+(row+.5)*r.height/3,9,alpha)}
+  particles.forEach(p=>particle(ctx,r.x+p.x*r.width,r.y+p.y*r.height,p.radius,.90));ctx.restore();
+  surfaceCharges(ctx,r);crossElectric(ctx,r);representative(ctx,r,w);
+  if(state.fieldOn){const alpha=.18+.60*state.fieldStrength;magneticMark(ctx,r.x+22,r.y+23,10,alpha);text(ctx,"B",r.x+40,r.y+23,{color:C.magnetic,size:15,align:"left",alpha})}
+  text(ctx,"+y",r.x-10,r.y,{color:C.muted,size:12,align:"right"});text(ctx,"−y",r.x-10,r.y+r.height,{color:C.muted,size:12,align:"right"});crossAxes(ctx,w,h);
+}
+function update(dt){
+  const active=hallActive(),pTarget=active?deflectionSign()*state.fieldStrength:0,reverse=Math.sign(pTarget)!==Math.sign(polarization)&&Math.abs(polarization)>.01,pTau=reverse?.95:(Math.abs(pTarget)>Math.abs(polarization)?1.05:.62);polarization+=(pTarget-polarization)*(1-Math.exp(-dt/pTau));if(Math.abs(pTarget-polarization)<.0005)polarization=pTarget;
+  particles.forEach(p=>{if(state.currentOn){p.x=fract(p.x+velocitySign()*.115*dt);if(p.x<0)p.x+=1}const targetY=clamp(p.baseY-polarization*.25*p.response,.08,.92);p.y+=(targetY-p.y)*(1-Math.exp(-dt*p.follow))});
+}
+function draw(){draw3D();drawCross();updateUI()}
+function animate(now){const dt=Math.min(.05,Math.max(0,(now-previousTime)/1000));previousTime=now;update(dt);draw();requestAnimationFrame(animate)}
+const observer=new ResizeObserver(resizeAll);observer.observe(threeDCanvas);observer.observe(crossCanvas);window.addEventListener("resize",resizeAll);
+bind();resizeAll();updateUI();requestAnimationFrame(animate);
+</script>
+</body>
+</html>
