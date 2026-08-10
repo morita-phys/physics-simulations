@@ -3,1035 +3,1244 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>アトウッドの機械：質量差・全体の質量・加速度</title>
+  <title>アトウッドの器械におけるおもりの加速度は何で決まるのだろう？</title>
   <style>
     :root {
-      --blue: #0b63e6;
-      --blue-dark: #084fb8;
-      --blue-soft: #eaf3ff;
-      --green: #12a13b;
-      --red: #e81e1e;
-      --yellow: #ffcb55;
-      --ink: #142033;
-      --muted: #66758a;
-      --line: #d9e1ec;
+      color-scheme: light;
+      --blue: #1263ad;
+      --blue-dark: #0d4f8c;
+      --blue-soft: #e9f1f8;
+      --green: #149447;
+      --green-dark: #0d7437;
+      --amber: #d75522;
+      --red: #d75522;
+      --ink: #18212a;
+      --muted: #66717d;
+      --line: #d6dce2;
       --panel: #ffffff;
-      --bg: #f4f7fb;
-      --shadow: 0 10px 30px rgba(40, 64, 96, 0.08);
+      --page: #f5f7f9;
       --radius: 10px;
+      --shadow: 0 2px 8px rgba(25, 38, 52, 0.08);
     }
 
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
+      width: 100%;
+      height: 100%;
       margin: 0;
-      font-family: "Yu Gothic", "Hiragino Sans", "Meiryo", system-ui, sans-serif;
-      color: var(--ink);
-      background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
-      min-width: 1080px;
-    }
-
-    .app {
-      width: min(1560px, calc(100vw - 32px));
-      margin: 0 auto;
-      padding: 22px 0 18px;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      margin-bottom: 18px;
-    }
-
-    .logo {
-      width: 72px;
-      height: 72px;
-      display: grid;
-      place-items: center;
-      border-radius: 16px;
-      background: var(--blue-soft);
-      border: 1px solid #c8dcff;
-    }
-
-    .logo svg {
-      width: 54px;
-      height: 54px;
-    }
-
-    h1 {
-      margin: 0 0 6px;
-      font-size: clamp(26px, 2.4vw, 38px);
-      letter-spacing: 0;
-      line-height: 1.15;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(300px, 390px) minmax(520px, 1fr) minmax(330px, 450px);
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .column {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      min-height: 0;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.94);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
       overflow: hidden;
     }
 
-    .card-header {
-      padding: 16px 18px 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
+    body {
+      background: var(--page);
+      color: var(--ink);
+      font-family: "BIZ UDPGothic", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+      font-size: 16px;
     }
 
-    .card-title {
-      margin: 0;
-      color: var(--blue);
-      font-size: 20px;
-      font-weight: 800;
+    button,
+    input {
+      font: inherit;
     }
 
-    .graph-card {
-      height: 390px;
+    button {
+      transition: 0.12s;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: #87939f;
+    }
+
+    button,
+    input[type="range"],
+    input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(20, 148, 71, 0.28);
+      outline-offset: 2px;
+    }
+
+    .app {
       display: flex;
       flex-direction: column;
-    }
-
-    .graph-wrap {
-      position: relative;
-      flex: 1;
-      min-height: 0;
-      padding: 6px 16px 16px;
-    }
-
-    canvas {
-      display: block;
       width: 100%;
-      height: 100%;
+      height: 100dvh;
+      max-width: 100vw;
+      max-height: 100vh;
+      max-width: 1600px;
+      margin: auto;
+      padding: 10px 12px 12px;
+      gap: 8px;
     }
 
-    .summary {
-      padding: 6px 18px 16px;
-    }
-
-    .summary-row {
-      display: grid;
-      grid-template-columns: 38px 1fr auto;
+    .title-bar {
+      display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid #edf1f6;
-      font-size: 17px;
+      flex: 0 0 46px;
+      min-width: 0;
+      padding: 0 4px;
     }
 
-    .summary-row:last-child {
-      border-bottom: 0;
-    }
-
-    .badge {
-      display: grid;
+    .title-icon {
+      display: none;
       place-items: center;
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      color: #fff;
-      font-weight: 900;
-      font-style: italic;
-      font-size: 20px;
+      flex: 0 0 50px;
+      width: 50px;
+      height: 50px;
+      border: 1px solid #d7e6fa;
+      border-radius: 11px;
+      background: #fff;
+      color: var(--blue);
     }
 
-    .badge.a { background: var(--red); }
-    .badge.v { background: var(--blue); }
-    .badge.t { background: var(--green); }
-    .badge.g { background: #8747c9; }
-
-    .summary-label {
-      font-weight: 800;
+    .title-icon svg {
+      width: 34px;
+      height: 34px;
     }
 
-    .summary-label small {
-      display: block;
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 12px;
-      margin-top: 2px;
-    }
-
-    .summary-value {
-      font-variant-numeric: tabular-nums;
-      font-weight: 700;
+    h1 {
+      min-width: 0;
+      margin: 0;
+      font-size: clamp(1.45rem, 2.2vw, 2rem);
+      line-height: 1.16;
       white-space: nowrap;
     }
 
-    .simulation-card {
-      position: relative;
-      min-height: 678px;
-      height: calc(100vh - 142px);
-      max-height: 760px;
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 55fr) minmax(520px, 45fr);
+      flex: 1 1 auto;
+      min-height: 0;
+      gap: 10px;
     }
 
-    .sim-label {
+    .card {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .simulation-card {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) 76px;
+    }
+
+    .simulation-stage {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .section-badge {
       position: absolute;
-      top: 16px;
-      left: 16px;
-      z-index: 2;
+      z-index: 3;
+      top: 10px;
+      left: 10px;
+      margin: 0;
+      padding: 6px 12px;
+      border-radius: 6px;
       background: var(--blue);
       color: #fff;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-weight: 900;
-      letter-spacing: 0.03em;
+      font-size: 0.98rem;
+      line-height: 1;
+      font-weight: 800;
     }
 
     .stopwatch {
       position: absolute;
-      right: 20px;
-      top: 86px;
-      width: 178px;
-      background: rgba(255, 255, 255, 0.94);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      box-shadow: 0 8px 22px rgba(30, 55, 90, 0.12);
-      padding: 14px;
-      text-align: center;
-    }
-
-    .stopwatch.hidden {
-      display: none;
-    }
-
-    .stopwatch-title {
-      color: var(--blue);
-      font-weight: 900;
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-
-    .stopwatch-time {
-      color: var(--blue);
-      font-size: 43px;
-      font-weight: 900;
-      line-height: 1;
+      z-index: 3;
+      top: 15px;
+      right: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      font-size: 21px;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
 
-    .stopwatch-time span {
-      font-size: 20px;
-      margin-left: 4px;
+    .stopwatch[hidden] {
+      display: none;
     }
 
-    .panel {
-      padding: 16px 20px;
+    .stopwatch svg {
+      width: 25px;
+      height: 25px;
     }
 
-    .param-row {
-      display: grid;
-      grid-template-columns: 112px 1fr 82px 24px;
-      align-items: center;
-      gap: 12px;
-      margin: 13px 0;
+    #apparatus {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+    }
+
+    .apparatus-text {
+      fill: var(--ink);
+      font-family: inherit;
+    }
+
+    #apparatus g[hidden] {
+      display: none;
+    }
+
+    .axis-title {
       font-size: 17px;
+      font-weight: 700;
+    }
+
+    .axis-note {
+      font-size: 13px;
+      font-weight: 600;
+      fill: var(--muted);
+    }
+
+    .tick-text {
+      font-size: 15px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .line-label {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .mass-caption {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .mass-value {
+      font-size: 21px;
       font-weight: 800;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items: center;
+      gap: 18px;
+      padding: 10px 20px 13px;
+      border-top: 1px solid #e4eaf2;
+    }
+
+    .control-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      height: 52px;
+      gap: 10px;
+      border-radius: 8px;
+      font-size: 19px;
+      font-weight: 800;
+      transition: filter 120ms ease, transform 120ms ease, background 120ms ease;
+    }
+
+    .control-button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .control-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .button-icon {
+      width: 0;
+      height: 0;
+      flex: 0 0 auto;
+    }
+
+    .start-button {
+      border: 1px solid var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .start-button .button-icon {
+      border-top: 10px solid transparent;
+      border-bottom: 10px solid transparent;
+      border-left: 16px solid currentColor;
+    }
+
+    .pause-button {
+      border: 1px solid #c9d0d7;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .pause-button .button-icon {
+      width: 16px;
+      height: 20px;
+      border: 0;
+      background: linear-gradient(to right, currentColor 0 5px, transparent 5px 11px, currentColor 11px 16px);
+    }
+
+    .reset-button {
+      border: 1px solid #c9d0d7;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .reset-button .button-icon {
+      width: 23px;
+      height: 23px;
+      border: 0;
+      background: none;
+      transform: none;
+    }
+
+    .reset-button.needs-reset {
+      border-color: var(--amber);
+      background: #fff4ee;
+      color: #9a3a16;
+      box-shadow: 0 0 0 3px rgba(215, 85, 34, 0.12);
+    }
+
+    .right-column {
+      display: grid;
+      grid-template-rows: minmax(210px, 34fr) minmax(300px, 66fr);
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .settings-card,
+    .graph-card {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-heading {
+      flex: 0 0 auto;
+      margin: 0;
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid #e2e6ea;
+      color: var(--ink);
+      font-size: 1.18rem;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 7px 18px 14px;
+      gap: 0;
+    }
+
+    .settings-section {
+      min-width: 0;
+    }
+
+    .settings-section + .settings-section {
+      padding-left: 20px;
+      border-left: 1px solid #e1e7ef;
+    }
+
+    .settings-title {
+      margin: 0 0 8px;
+      color: var(--ink);
+      font-size: 0.94rem;
+      font-weight: 800;
+    }
+
+    .parameter-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mass-summary-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 2px;
+    }
+
+    .mass-summary-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 66px 17px;
+      align-items: center;
+      min-width: 0;
+      min-height: 34px;
+      gap: 7px;
+    }
+
+    .parameter-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) minmax(100px, 1.15fr) 66px 17px;
+      align-items: center;
+      min-height: 33px;
+      gap: 8px;
+    }
+
+    .parameter-row.output-row {
+      grid-template-columns: minmax(120px, 1fr) 66px 17px;
+    }
+
+    .parameter-label {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     input[type="range"] {
       width: 100%;
-      accent-color: var(--blue);
+      min-width: 0;
+      height: 26px;
+      margin: 0;
+      accent-color: var(--green);
     }
 
-    input[type="number"], .readonly-value {
-      width: 82px;
-      border: 1px solid #cfd8e5;
-      border-radius: 8px;
+    input[type="range"]:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .number-input,
+    .readonly-output {
+      width: 66px;
+      height: 34px;
+      border: 1px solid #c9d4e3;
+      border-radius: 7px;
       background: #fff;
-      padding: 8px 8px;
-      font: inherit;
-      text-align: right;
+      color: var(--ink);
+      text-align: center;
+      font-size: 16px;
+      font-weight: 650;
       font-variant-numeric: tabular-nums;
-      box-shadow: inset 0 1px 2px rgba(20, 32, 51, 0.04);
     }
 
-    .readonly-value {
-      color: #536273;
-      background: #f5f7fa;
-      display: inline-block;
+    .number-input {
+      padding: 3px 4px;
+      appearance: textfield;
     }
 
-    .option-list {
-      display: grid;
-      gap: 13px;
-      margin-top: 8px;
+    .number-input::-webkit-inner-spin-button,
+    .number-input::-webkit-outer-spin-button {
+      margin: 0;
+      appearance: none;
     }
 
-    .option-list label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 17px;
-      font-weight: 800;
+    .number-input:disabled {
+      background: #eef2f6;
+      color: #7a8798;
+      cursor: not-allowed;
     }
 
-    input[type="checkbox"] {
-      width: 22px;
-      height: 22px;
-      accent-color: var(--blue);
-    }
-
-    .buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .buttons button {
-      border: 0;
-      border-radius: 8px;
-      min-height: 58px;
-      font-size: 20px;
-      font-weight: 900;
-      cursor: pointer;
-      transition: transform 0.12s ease, filter 0.12s ease;
-    }
-
-    .buttons button:active {
-      transform: translateY(1px);
-    }
-
-    .start {
-      background: var(--blue);
-      color: #fff;
-      box-shadow: 0 8px 18px rgba(11, 99, 230, 0.22);
-    }
-
-    .pause {
-      background: var(--yellow);
-      color: #1d2330;
-    }
-
-    .reset {
-      grid-column: 1 / -1;
-      background: #fff;
-      color: var(--red);
-      border: 1px solid var(--line) !important;
-    }
-
-    button:hover {
-      filter: brightness(0.98);
-    }
-
-    .info {
-      margin-top: 18px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 15px 20px;
-      background: #eef6ff;
-      color: #173b70;
-      border: 1px solid #cce1ff;
-      border-radius: 10px;
-      font-size: 17px;
-      font-weight: 800;
-    }
-
-    .info-mark {
+    .readonly-output {
       display: grid;
       place-items: center;
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      background: var(--blue);
-      color: #fff;
-      font-size: 21px;
-      font-weight: 900;
-      flex: 0 0 auto;
+      background: #f7f9fb;
     }
 
-    @media (max-width: 1180px) {
-      .layout {
-        grid-template-columns: 330px minmax(480px, 1fr) 330px;
-        gap: 12px;
+    .unit {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .options-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .option-label input {
+      flex: 0 0 auto;
+      width: 19px;
+      height: 19px;
+      margin: 0;
+      accent-color: var(--green);
+    }
+
+    .graph-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 0 0 auto;
+      gap: 12px;
+      padding: 10px 16px 8px;
+      border-bottom: 1px solid #e2e6ea;
+    }
+
+    .graph-head .card-heading {
+      padding: 0;
+      border-bottom: 0;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .legend-line {
+      width: 31px;
+      height: 3px;
+      background: var(--blue);
+    }
+
+    .graph-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 0 8px 8px 5px;
+    }
+
+    #velocityGraph {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 210px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1120px) {
+      html,
+      body {
+        overflow: auto;
       }
 
-      .param-row {
-        grid-template-columns: 96px 1fr 76px 22px;
+      .app {
+        height: auto;
+        min-height: 100dvh;
+        max-height: none;
       }
 
-      .stopwatch {
-        right: 14px;
-        width: 160px;
+      h1 {
+        white-space: normal;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .simulation-card {
+        min-height: 650px;
+      }
+
+      .right-column {
+        grid-template-rows: auto 420px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .app {
+        padding: 8px;
+      }
+
+      .title-bar {
+        height: auto;
+        min-height: 58px;
+      }
+
+      .title-icon {
+        display: none;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+
+      .simulation-card {
+        grid-template-rows: 520px auto;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .right-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .settings-section + .settings-section {
+        padding-top: 12px;
+        padding-left: 0;
+        border-top: 1px solid #e1e7ef;
+        border-left: 0;
+      }
+
+      .parameter-row {
+        grid-template-columns: 1fr minmax(90px, 1fr) 62px 17px;
+      }
+
+      .parameter-row.output-row {
+        grid-template-columns: 1fr 62px 17px;
+      }
+
+      .mass-summary-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+      }
+
+      .mass-summary-item {
+        grid-template-columns: minmax(0, 1fr) 62px 17px;
+        gap: 5px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header>
-      <div class="logo" aria-hidden="true">
-        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M40 8v16" stroke="#0b63e6" stroke-width="6" stroke-linecap="round"/>
-          <circle cx="40" cy="30" r="11" fill="#fff" stroke="#0b63e6" stroke-width="6"/>
-          <path d="M40 41v18M16 24v28M64 30v23" stroke="#0b63e6" stroke-width="6" stroke-linecap="round"/>
-          <rect x="5" y="49" width="23" height="23" rx="4" fill="#0b63e6"/>
-          <circle cx="64" cy="61" r="10" fill="#fff" stroke="#0b63e6" stroke-width="6"/>
+  <main class="app">
+    <header class="title-bar">
+      <div class="title-icon" aria-hidden="true">
+        <svg viewBox="0 0 40 40">
+          <path d="M8 10v20M32 10v20M12 11h5M23 11h5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="20" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M14 11C14 5 26 5 26 11" fill="none" stroke="currentColor" stroke-width="2.5"/>
+          <rect x="4" y="27" width="8" height="9" rx="2" fill="currentColor"/>
+          <rect x="28" y="27" width="8" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/>
         </svg>
       </div>
-      <div>
-        <h1>アトウッドの機械：質量差・全体の質量・加速度</h1>
-      </div>
+      <h1>アトウッドの器械におけるおもりの加速度は何で決まるのだろう？</h1>
     </header>
 
-    <main class="layout">
-      <section class="column">
-        <article class="card graph-card">
-          <div class="card-header">
-            <h2 class="card-title">速度－時間グラフ</h2>
+    <div class="workspace">
+      <section class="card simulation-card" aria-labelledby="simulationHeading">
+        <div class="simulation-stage">
+          <h2 id="simulationHeading" class="section-badge">シミュレーション</h2>
+          <div id="stopwatch" class="stopwatch" aria-label="ストップウォッチ">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 9v4l3 2M9 2h6M12 2v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span id="timeDisplay">00.00 s</span>
           </div>
-          <div class="graph-wrap">
-            <canvas id="graphCanvas" aria-label="速度と時間のグラフ"></canvas>
-          </div>
-        </article>
 
-        <article class="card">
-          <div class="card-header">
-            <h2 class="card-title">現在の状態（数値サマリー）</h2>
-          </div>
-          <div class="summary">
-            <div class="summary-row">
-              <span class="badge a">a</span>
-              <span class="summary-label">加速度 a</span>
-              <span class="summary-value" id="accelValue">0.000 m/s²</span>
-            </div>
-            <div class="summary-row">
-              <span class="badge v">v</span>
-              <span class="summary-label">速度 v</span>
-              <span class="summary-value" id="velocityValue">0.000 m/s</span>
-            </div>
-            <div class="summary-row">
-              <span class="badge t">t</span>
-              <span class="summary-label">経過時間 t</span>
-              <span class="summary-value" id="timeValue">00.00 s</span>
-            </div>
-          </div>
-        </article>
-      </section>
+          <svg id="apparatus" viewBox="0 0 820 520" role="img" aria-labelledby="apparatusTitle apparatusDesc" preserveAspectRatio="xMidYMid meet">
+            <title id="apparatusTitle">アトウッドの器械</title>
+            <desc id="apparatusDesc">滑車に掛けた糸の両端に、青い左のおもりと緑の右のおもりがあります。位置はおもりの中心を基準に示します。</desc>
+            <defs>
+              <linearGradient id="supportGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#8a96a5"/>
+                <stop offset="1" stop-color="#4c5969"/>
+              </linearGradient>
+              <linearGradient id="pulleyGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#fbfdff"/>
+                <stop offset="0.55" stop-color="#cad2dc"/>
+                <stop offset="1" stop-color="#8b97a7"/>
+              </linearGradient>
+              <linearGradient id="leftMassGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3d82be"/>
+                <stop offset="1" stop-color="#1263ad"/>
+              </linearGradient>
+              <linearGradient id="rightMassGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3bb265"/>
+                <stop offset="1" stop-color="#149447"/>
+              </linearGradient>
+            </defs>
 
-      <section class="card simulation-card">
-        <div class="sim-label">シミュレーション</div>
-        <canvas id="simCanvas" aria-label="アトウッドの機械のシミュレーション"></canvas>
-        <div class="stopwatch" id="stopwatchPanel">
-          <div class="stopwatch-title">ストップウォッチ</div>
-          <div class="stopwatch-time" id="stopwatchTime">00.00<span>s</span></div>
+            <g aria-label="位置目盛り">
+              <text x="54" y="118" class="apparatus-text axis-title">位置 <tspan font-style="italic">y</tspan> (m)</text>
+              <text x="54" y="138" class="apparatus-text axis-note">（質量の中心基準）</text>
+              <line x1="145" y1="202" x2="145" y2="507" stroke="#66768b" stroke-width="2"/>
+              <path d="M138 499 L145 514 L152 499" fill="#66768b"/>
+              <g id="axisTicks"></g>
+            </g>
+
+            <line x1="145" y1="300" x2="718" y2="300" stroke="#8fa1b7" stroke-width="1.7" stroke-dasharray="7 7"/>
+            <text x="632" y="293" class="apparatus-text line-label">初期位置（基準）</text>
+
+            <line x1="145" y1="440" x2="718" y2="440" stroke="#149447" stroke-width="2" stroke-dasharray="8 6"/>
+            <text x="621" y="434" class="line-label" fill="#0d7437">測定ライン</text>
+            <text x="570" y="456" class="line-label" fill="#0d7437">（初期位置から1.0 m下）</text>
+
+            <g aria-label="支持部と滑車">
+              <rect x="377" y="50" width="176" height="12" rx="1" fill="url(#supportGradient)"/>
+              <rect x="452" y="61" width="26" height="20" fill="#9aa6b5"/>
+              <path d="M427 94 A38 38 0 0 1 503 94" fill="none" stroke="#7b4a29" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="465" cy="94" r="38" fill="url(#pulleyGradient)" stroke="#111b28" stroke-width="2"/>
+              <circle cx="465" cy="94" r="25" fill="none" stroke="#5d6877" stroke-width="2"/>
+              <circle cx="465" cy="94" r="7" fill="#f8fafc" stroke="#111b28" stroke-width="2"/>
+            </g>
+
+            <line id="leftRope" x1="427" y1="94" x2="427" y2="283" stroke="#7b4a29" stroke-width="4" stroke-linecap="round"/>
+            <line id="rightRope" x1="503" y1="94" x2="503" y2="283" stroke="#7b4a29" stroke-width="4" stroke-linecap="round"/>
+
+            <g id="leftMass" aria-label="左のおもり">
+              <rect x="414" y="283" width="26" height="34" rx="4" fill="url(#leftMassGradient)" stroke="#0d4f8c" stroke-width="2"/>
+              <circle cx="427" cy="300" r="2.5" fill="#fff" opacity="0.85"/>
+            </g>
+            <g id="rightMass" aria-label="右のおもり">
+              <rect x="490" y="283" width="26" height="34" rx="4" fill="url(#rightMassGradient)" stroke="#0d7437" stroke-width="2"/>
+              <circle cx="503" cy="300" r="2.5" fill="#fff" opacity="0.85"/>
+            </g>
+
+            <g id="leftMassCard">
+              <rect x="250" y="331" width="108" height="60" rx="9" fill="#fff" stroke="#cbd6e4" stroke-width="1.5"/>
+              <text x="304" y="353" text-anchor="middle" class="apparatus-text mass-caption">左のおもり</text>
+              <text id="leftMassLabel" x="304" y="379" text-anchor="middle" class="mass-value" fill="#1263ad">590 g</text>
+            </g>
+            <g id="rightMassCard">
+              <rect x="580" y="331" width="108" height="60" rx="9" fill="#fff" stroke="#cbd6e4" stroke-width="1.5"/>
+              <text x="634" y="353" text-anchor="middle" class="apparatus-text mass-caption">右のおもり</text>
+              <text id="rightMassLabel" x="634" y="379" text-anchor="middle" class="mass-value" fill="#149447">480 g</text>
+            </g>
+          </svg>
+          <p id="stateAnnouncement" class="sr-only" aria-live="polite"></p>
+        </div>
+
+        <div class="controls" aria-label="シミュレーション操作">
+          <button id="startButton" class="control-button start-button" type="button">
+            <span class="button-icon" aria-hidden="true"></span>
+            <span>スタート</span>
+          </button>
+          <button id="pauseButton" class="control-button pause-button" type="button" disabled>
+            <span class="button-icon" aria-hidden="true"></span>
+            <span>一時停止</span>
+          </button>
+          <button id="resetButton" class="control-button reset-button" type="button">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4.5 7.5V3.8M4.5 7.5h3.7M4.8 7.2A8 8 0 1 1 4 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>リセット</span>
+          </button>
         </div>
       </section>
 
-      <aside class="column">
-        <article class="card panel" id="settingsPanel">
-          <h2 class="card-title">パラメータ設定</h2>
-          <div class="param-row">
-            <label for="leftMassRange">左の質量</label>
-            <input id="leftMassRange" type="range" min="50" max="1000" step="10" value="500">
-            <input id="leftMassInput" type="number" min="50" max="1000" step="10" value="500">
-            <span>g</span>
+      <aside class="right-column">
+        <section class="card settings-card" aria-labelledby="settingsHeading">
+          <h2 id="settingsHeading" class="card-heading">パラメータ設定</h2>
+          <div class="settings-grid">
+            <div class="settings-section">
+              <div class="parameter-list">
+                <div class="parameter-row">
+                  <label class="parameter-label" for="leftMassRange">左のおもりの質量</label>
+                  <input id="leftMassRange" type="range" min="50" max="1000" step="10" value="590">
+                  <input id="leftMassInput" class="number-input" type="number" min="50" max="1000" step="10" value="590" aria-label="左のおもりの質量（グラム）">
+                  <span class="unit">g</span>
+                </div>
+                <div class="parameter-row">
+                  <label class="parameter-label" for="rightMassRange">右のおもりの質量</label>
+                  <input id="rightMassRange" type="range" min="50" max="1000" step="10" value="480">
+                  <input id="rightMassInput" class="number-input" type="number" min="50" max="1000" step="10" value="480" aria-label="右のおもりの質量（グラム）">
+                  <span class="unit">g</span>
+                </div>
+                <div class="mass-summary-row">
+                  <div class="mass-summary-item">
+                    <span class="parameter-label">総質量</span>
+                    <output id="totalMassOutput" class="readonly-output" aria-label="総質量">1070</output>
+                    <span class="unit">g</span>
+                  </div>
+                  <div class="mass-summary-item">
+                    <span class="parameter-label">質量差（左 − 右）</span>
+                    <output id="massDifferenceOutput" class="readonly-output" aria-label="質量差、左マイナス右">110</output>
+                    <span class="unit">g</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="param-row">
-            <label for="rightMassRange">右の質量</label>
-            <input id="rightMassRange" type="range" min="50" max="1000" step="10" value="480">
-            <input id="rightMassInput" type="number" min="50" max="1000" step="10" value="480">
-            <span>g</span>
-          </div>
-          <div class="param-row">
-            <span>総質量</span>
-            <input type="range" min="100" max="2000" value="980" disabled>
-            <span class="readonly-value" id="totalMassValue">980</span>
-            <span>g</span>
-          </div>
-          <div class="param-row">
-            <span>質量差（左－右）</span>
-            <input type="range" min="-950" max="950" value="20" disabled>
-            <span class="readonly-value" id="diffMassValue">20</span>
-            <span>g</span>
-          </div>
-        </article>
+        </section>
 
-        <article class="card panel">
-          <h2 class="card-title">表示オプション</h2>
-          <div class="option-list">
-            <label><input id="showSettings" type="checkbox" checked>設定を表示</label>
-            <label><input id="showVelocity" type="checkbox" checked>速度ベクトル</label>
-            <label><input id="showAcceleration" type="checkbox" checked>加速度ベクトル</label>
-            <label><input id="showStopwatch" type="checkbox" checked>ストップウォッチを表示</label>
+        <section class="card graph-card" aria-labelledby="graphHeading">
+          <div class="graph-head">
+            <h2 id="graphHeading" class="card-heading">速度−時間グラフ</h2>
+            <div class="legend" aria-label="凡例">
+              <span class="legend-line" aria-hidden="true"></span>
+              <span>左のおもり <i>v</i><sub>L</sub></span>
+            </div>
           </div>
-        </article>
-
-        <article class="buttons" aria-label="操作ボタン">
-          <button class="start" id="startButton" type="button">▶ スタート</button>
-          <button class="pause" id="pauseButton" type="button">Ⅱ 一時停止</button>
-          <button class="reset" id="resetButton" type="button">↻ リセット</button>
-        </article>
+          <div class="graph-wrap">
+            <canvas id="velocityGraph" role="img" aria-label="左のおもりの速度と時間のグラフ。鉛直下向きが正です。"></canvas>
+          </div>
+        </section>
       </aside>
-    </main>
-
-    <div class="info">
-      <span class="info-mark">i</span>
-      <span>理想条件：摩擦なし・糸と滑車の質量なし・糸は伸びないと仮定しています。</span>
     </div>
-  </div>
+  </main>
 
   <script>
     (() => {
+      "use strict";
+
       const G = 9.8;
-      const MEASURE_DISTANCE = 1.00;
-      const MAX_TRAVEL = 1.06;
-      const PIXELS_PER_METER = 170;
-      const GRAPH_TIME_MAX = 5.0;
-      const GRAPH_SPEED_MAX = 5.0;
+      const MASS_MIN = 50;
+      const MASS_MAX = 1000;
+      const MASS_STEP = 10;
+      const MEASUREMENT_POSITION = 1;
+      const INITIAL_LEFT_MASS = 590;
+      const INITIAL_RIGHT_MASS = 480;
+      const BASELINE_Y = 300;
+      const PIXELS_PER_METER = 140;
+      const LEFT_X = 427;
+      const RIGHT_X = 503;
+      const MASS_HALF_HEIGHT = 17;
+      const MAX_ACCELERATION = ((MASS_MAX - MASS_MIN) / (MASS_MAX + MASS_MIN)) * G;
+      const MIN_ACCELERATION = (MASS_STEP / (MASS_MAX + MASS_MAX - MASS_STEP)) * G;
+      const GRAPH_TIME_MAX = Math.ceil(Math.sqrt((2 * MEASUREMENT_POSITION) / MIN_ACCELERATION) * 2) / 2;
+      const GRAPH_VELOCITY_MAX = Math.ceil(Math.sqrt(2 * MAX_ACCELERATION * MEASUREMENT_POSITION) * 2) / 2;
 
       const elements = {
-        simCanvas: document.getElementById("simCanvas"),
-        graphCanvas: document.getElementById("graphCanvas"),
         leftMassRange: document.getElementById("leftMassRange"),
-        rightMassRange: document.getElementById("rightMassRange"),
         leftMassInput: document.getElementById("leftMassInput"),
+        rightMassRange: document.getElementById("rightMassRange"),
         rightMassInput: document.getElementById("rightMassInput"),
-        totalMassValue: document.getElementById("totalMassValue"),
-        diffMassValue: document.getElementById("diffMassValue"),
-        accelValue: document.getElementById("accelValue"),
-        velocityValue: document.getElementById("velocityValue"),
-        timeValue: document.getElementById("timeValue"),
-        stopwatchPanel: document.getElementById("stopwatchPanel"),
-        stopwatchTime: document.getElementById("stopwatchTime"),
-        settingsPanel: document.getElementById("settingsPanel"),
-        showSettings: document.getElementById("showSettings"),
-        showVelocity: document.getElementById("showVelocity"),
-        showAcceleration: document.getElementById("showAcceleration"),
-        showStopwatch: document.getElementById("showStopwatch"),
+        totalMassOutput: document.getElementById("totalMassOutput"),
+        massDifferenceOutput: document.getElementById("massDifferenceOutput"),
+        stopwatch: document.getElementById("stopwatch"),
+        timeDisplay: document.getElementById("timeDisplay"),
         startButton: document.getElementById("startButton"),
         pauseButton: document.getElementById("pauseButton"),
-        resetButton: document.getElementById("resetButton")
+        resetButton: document.getElementById("resetButton"),
+        stateAnnouncement: document.getElementById("stateAnnouncement"),
+        leftRope: document.getElementById("leftRope"),
+        rightRope: document.getElementById("rightRope"),
+        leftMass: document.getElementById("leftMass"),
+        rightMass: document.getElementById("rightMass"),
+        leftMassCard: document.getElementById("leftMassCard"),
+        rightMassCard: document.getElementById("rightMassCard"),
+        leftMassLabel: document.getElementById("leftMassLabel"),
+        rightMassLabel: document.getElementById("rightMassLabel"),
+        axisTicks: document.getElementById("axisTicks"),
+        graph: document.getElementById("velocityGraph")
       };
-
-      const simCtx = elements.simCanvas.getContext("2d");
-      const graphCtx = elements.graphCanvas.getContext("2d");
 
       const state = {
-        leftMass: 500,
-        rightMass: 480,
-        acceleration: 0,
-        velocity: 0,
-        displacement: 0,
+        leftMass: INITIAL_LEFT_MASS,
+        rightMass: INITIAL_RIGHT_MASS,
+        accelerationLeft: 0,
         simTime: 0,
-        running: false,
-        lastFrame: null,
-        graphPoints: [{ t: 0, v: 0 }],
-        measuredTime: null,
-        measuredDistance: null
+        mode: "idle",
+        lastFrameTime: null,
+        animationFrameId: null
       };
+
+      function calculateAcceleration(leftMass, rightMass) {
+        return ((leftMass - rightMass) / (leftMass + rightMass)) * G;
+      }
+
+      function getMotionAt(time) {
+        const accelerationLeft = state.accelerationLeft;
+        const positionLeft = 0.5 * accelerationLeft * time * time;
+        const velocityLeft = accelerationLeft * time;
+        return {
+          positionLeft,
+          positionRight: -positionLeft,
+          velocityLeft,
+          velocityRight: -velocityLeft,
+          accelerationLeft,
+          accelerationRight: -accelerationLeft
+        };
+      }
+
+      function physicalToScreenY(position) {
+        return BASELINE_Y + position * PIXELS_PER_METER;
+      }
 
       function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
       }
 
-      function formatTime(value) {
-        return value.toFixed(2).padStart(5, "0") + " s";
+      function normalizeMass(value, fallback, min = MASS_MIN, max = MASS_MAX) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return fallback;
+        return clamp(Math.round(number / 10) * 10, min, max);
       }
 
-      function massFactor(grams) {
-        return clamp(0.86 + (grams - 50) / 950 * 0.28, 0.86, 1.14);
+      function formatTime(seconds) {
+        return `${seconds.toFixed(2).padStart(5, "0")} s`;
       }
 
-      function resizeCanvas(canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        const width = Math.max(1, Math.round(rect.width * dpr));
-        const height = Math.max(1, Math.round(rect.height * dpr));
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
-        const ctx = canvas.getContext("2d");
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        return { width: rect.width, height: rect.height };
+      function createAxisTicks() {
+        const values = [-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4];
+        const namespace = "http://www.w3.org/2000/svg";
+        values.forEach((value) => {
+          const y = physicalToScreenY(value);
+          const line = document.createElementNS(namespace, "line");
+          line.setAttribute("x1", "136");
+          line.setAttribute("x2", "154");
+          line.setAttribute("y1", String(y));
+          line.setAttribute("y2", String(y));
+          line.setAttribute("stroke", value === 1 ? "#149447" : "#66768b");
+          line.setAttribute("stroke-width", value === 1 ? "2.2" : "1.6");
+
+          const text = document.createElementNS(namespace, "text");
+          text.setAttribute("x", "118");
+          text.setAttribute("y", String(y + 5));
+          text.setAttribute("text-anchor", "end");
+          text.setAttribute("class", "apparatus-text tick-text");
+          if (value === 1) text.setAttribute("fill", "#0d7437");
+          text.textContent = value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+
+          elements.axisTicks.append(line, text);
+        });
       }
 
-      function updatePhysicsValues() {
-        const total = state.leftMass + state.rightMass;
-        const diff = state.leftMass - state.rightMass;
-        state.acceleration = total === 0 ? 0 : diff / total * G;
-        elements.totalMassValue.textContent = total.toFixed(0);
-        elements.diffMassValue.textContent = diff.toFixed(0);
+      function updateApparatus() {
+        const motion = getMotionAt(state.simTime);
+        const leftY = physicalToScreenY(motion.positionLeft);
+        const rightY = physicalToScreenY(motion.positionRight);
+
+        elements.leftMass.setAttribute("transform", `translate(0 ${leftY - BASELINE_Y})`);
+        elements.rightMass.setAttribute("transform", `translate(0 ${rightY - BASELINE_Y})`);
+        elements.leftRope.setAttribute("y2", String(leftY - MASS_HALF_HEIGHT));
+        elements.rightRope.setAttribute("y2", String(rightY - MASS_HALF_HEIGHT));
+
+        const leftCardY = clamp(leftY + 31, 115, 446);
+        const rightCardY = clamp(rightY + 31, 115, 446);
+        elements.leftMassCard.setAttribute("transform", `translate(0 ${leftCardY - 331})`);
+        elements.rightMassCard.setAttribute("transform", `translate(0 ${rightCardY - 331})`);
       }
 
-      function setMass(side, value) {
-        const next = clamp(Math.round(Number(value) / 10) * 10, 50, 1000);
-        if (side === "left") {
-          state.leftMass = next;
-          elements.leftMassRange.value = next;
-          elements.leftMassInput.value = next;
-        } else {
-          state.rightMass = next;
-          elements.rightMassRange.value = next;
-          elements.rightMassInput.value = next;
-        }
-        updatePhysicsValues();
-        updateReadouts();
-        drawAll();
+      function updateMassDisplays() {
+        elements.leftMassRange.value = String(state.leftMass);
+        elements.leftMassInput.value = String(state.leftMass);
+        elements.rightMassRange.value = String(state.rightMass);
+        elements.rightMassInput.value = String(state.rightMass);
+        elements.totalMassOutput.value = String(state.leftMass + state.rightMass);
+        elements.totalMassOutput.textContent = String(state.leftMass + state.rightMass);
+        elements.massDifferenceOutput.value = String(state.leftMass - state.rightMass);
+        elements.massDifferenceOutput.textContent = String(state.leftMass - state.rightMass);
+        elements.leftMassLabel.textContent = `${state.leftMass} g`;
+        elements.rightMassLabel.textContent = `${state.rightMass} g`;
       }
 
-      function resetSimulation() {
-        state.running = false;
-        state.velocity = 0;
-        state.displacement = 0;
-        state.simTime = 0;
-        state.lastFrame = null;
-        state.graphPoints = [{ t: 0, v: 0 }];
-        state.measuredTime = null;
-        state.measuredDistance = null;
-        updatePhysicsValues();
-        updateReadouts();
-        drawAll();
+      function updateControls() {
+        const isRunning = state.mode === "running";
+        const isAutoStopped = state.mode === "autoStopped";
+        [
+          elements.leftMassRange,
+          elements.leftMassInput,
+          elements.rightMassRange,
+          elements.rightMassInput
+        ].forEach((control) => {
+          control.disabled = isRunning;
+        });
+
+        elements.startButton.disabled = isRunning || isAutoStopped;
+        elements.pauseButton.disabled = !isRunning;
+        elements.resetButton.classList.toggle("needs-reset", isAutoStopped);
+        elements.startButton.querySelector("span:last-child").textContent = state.mode === "paused" ? "再開" : "スタート";
       }
 
-      function stopAtMeasurement() {
-        const direction = Math.sign(state.acceleration);
-        if (direction === 0) return;
-        const target = direction * MEASURE_DISTANCE;
-        state.displacement = target;
-        state.measuredTime = state.simTime;
-        state.measuredDistance = MEASURE_DISTANCE;
-        state.running = false;
-        state.lastFrame = null;
-      }
-
-      function step(timestamp) {
-        if (!state.running) return;
-        if (state.lastFrame === null) state.lastFrame = timestamp;
-        const rawDt = (timestamp - state.lastFrame) / 1000;
-        const dt = Math.min(rawDt, 0.04);
-        state.lastFrame = timestamp;
-
-        const previousDisplacement = state.displacement;
-        state.displacement += state.velocity * dt + 0.5 * state.acceleration * dt * dt;
-        state.velocity += state.acceleration * dt;
-        state.simTime += dt;
-
-        const direction = Math.sign(state.acceleration);
-        const reachedLine = direction !== 0 &&
-          Math.abs(previousDisplacement) < MEASURE_DISTANCE &&
-          Math.abs(state.displacement) >= MEASURE_DISTANCE;
-
-        if (reachedLine) {
-          const overshoot = Math.abs(state.displacement) - MEASURE_DISTANCE;
-          const speed = Math.max(Math.abs(state.velocity), 0.0001);
-          state.simTime = Math.max(0, state.simTime - overshoot / speed);
-          stopAtMeasurement();
-        }
-
-        if (Math.abs(state.displacement) > MAX_TRAVEL) {
-          state.displacement = Math.sign(state.displacement) * MAX_TRAVEL;
-          state.running = false;
-          state.lastFrame = null;
-        }
-
-        state.graphPoints.push({ t: state.simTime, v: state.velocity });
-        if (state.graphPoints.length > 900) state.graphPoints.shift();
-        updateReadouts();
-        drawAll();
-        if (state.running) requestAnimationFrame(step);
-      }
-
-      function updateReadouts() {
-        const signedAccel = state.acceleration;
-        const signedVelocity = state.velocity;
-        elements.accelValue.textContent = `${signedAccel.toFixed(3)} m/s²`;
-        elements.velocityValue.textContent = `${signedVelocity.toFixed(3)} m/s`;
-        elements.timeValue.textContent = formatTime(state.simTime);
-        elements.stopwatchTime.innerHTML = `${state.simTime.toFixed(2).padStart(5, "0")}<span>s</span>`;
-      }
-
-      function drawRoundedRect(ctx, x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.arcTo(x + w, y, x + w, y + h, r);
-        ctx.arcTo(x + w, y + h, x, y + h, r);
-        ctx.arcTo(x, y + h, x, y, r);
-        ctx.arcTo(x, y, x + w, y, r);
-        ctx.closePath();
-      }
-
-      function drawArrow(ctx, x, y, length, color, label, alignRight) {
-        const absLength = Math.abs(length);
-        if (absLength < 4) return;
-        const dir = Math.sign(length);
-        const endY = y + length;
-        const head = clamp(absLength * 0.45, 6, 18);
-        ctx.save();
-        ctx.strokeStyle = color;
-        ctx.fillStyle = color;
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, endY);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, endY + dir * 3);
-        ctx.lineTo(x - head * 0.5, endY - dir * head);
-        ctx.lineTo(x + head * 0.5, endY - dir * head);
-        ctx.closePath();
-        ctx.fill();
-        ctx.font = "800 17px sans-serif";
-        ctx.textAlign = alignRight ? "right" : "left";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#142033";
-        ctx.fillText(label, alignRight ? x - 22 : x + 22, y + length / 2);
-        ctx.restore();
-      }
-
-      function drawSim() {
-        const { width, height } = resizeCanvas(elements.simCanvas);
-        simCtx.clearRect(0, 0, width, height);
-
-        const cx = width / 2;
-        const pulleyY = 118;
-        const pulleyR = 58;
-        const leftX = cx - pulleyR;
-        const rightX = cx + pulleyR;
-        const baseY = clamp(height * 0.56, pulleyY + pulleyR + PIXELS_PER_METER + 38, height - PIXELS_PER_METER - 104);
-        const bottomLineY = baseY + MEASURE_DISTANCE * PIXELS_PER_METER;
-        const leftY = baseY + state.displacement * PIXELS_PER_METER;
-        const rightY = baseY - state.displacement * PIXELS_PER_METER;
-        const blockWLeft = 42 * massFactor(state.leftMass);
-        const blockHLeft = 48 * massFactor(state.leftMass);
-        const blockWRight = 42 * massFactor(state.rightMass);
-        const blockHRight = 48 * massFactor(state.rightMass);
-        const stopwatchTop = clamp(bottomLineY - 132, 86, height - 150);
-        elements.stopwatchPanel.style.top = `${stopwatchTop}px`;
-
-        const grad = simCtx.createLinearGradient(0, 0, 0, height);
-        grad.addColorStop(0, "#ffffff");
-        grad.addColorStop(1, "#f8fbff");
-        simCtx.fillStyle = grad;
-        simCtx.fillRect(0, 0, width, height);
-
-        simCtx.strokeStyle = "#15ad45";
-        simCtx.setLineDash([10, 8]);
-        simCtx.lineWidth = 2;
-        simCtx.beginPath();
-        simCtx.moveTo(Math.max(28, cx - 220), bottomLineY);
-        simCtx.lineTo(Math.min(width - 28, cx + 220), bottomLineY);
-        simCtx.stroke();
-        simCtx.setLineDash([]);
-        simCtx.fillStyle = "#0a9f34";
-        simCtx.font = "800 16px sans-serif";
-        simCtx.textAlign = "right";
-        simCtx.fillText("測定ライン", Math.min(width - 32, cx + 218), bottomLineY + 33);
-
-        simCtx.strokeStyle = "#6f4b27";
-        simCtx.lineWidth = 3;
-        simCtx.beginPath();
-        simCtx.moveTo(leftX, leftY - blockHLeft / 2);
-        simCtx.lineTo(leftX, pulleyY);
-        simCtx.arc(cx, pulleyY, pulleyR, Math.PI, 0);
-        simCtx.lineTo(rightX, rightY - blockHRight / 2);
-        simCtx.stroke();
-
-        simCtx.fillStyle = "#c4ccd6";
-        simCtx.fillRect(cx - 22, pulleyY - 82, 44, 92);
-        simCtx.fillStyle = "#252f3b";
-        simCtx.fillRect(cx - 150, pulleyY - 94, 300, 16);
-        simCtx.fillStyle = "#d5dbe3";
-        simCtx.fillRect(cx - 146, pulleyY - 93, 292, 6);
-
-        const pulleyGrad = simCtx.createRadialGradient(cx - 20, pulleyY - 20, 10, cx, pulleyY, pulleyR);
-        pulleyGrad.addColorStop(0, "#f4f7fb");
-        pulleyGrad.addColorStop(0.55, "#c6ced9");
-        pulleyGrad.addColorStop(1, "#8793a2");
-        simCtx.fillStyle = pulleyGrad;
-        simCtx.strokeStyle = "#26313d";
-        simCtx.lineWidth = 3;
-        simCtx.beginPath();
-        simCtx.arc(cx, pulleyY, pulleyR, 0, Math.PI * 2);
-        simCtx.fill();
-        simCtx.stroke();
-        simCtx.strokeStyle = "#495566";
-        simCtx.lineWidth = 4;
-        simCtx.beginPath();
-        simCtx.arc(cx, pulleyY, pulleyR - 18, 0, Math.PI * 2);
-        simCtx.stroke();
-        simCtx.fillStyle = "#e8edf3";
-        simCtx.strokeStyle = "#495566";
-        simCtx.lineWidth = 4;
-        simCtx.beginPath();
-        simCtx.arc(cx, pulleyY, 12, 0, Math.PI * 2);
-        simCtx.fill();
-        simCtx.stroke();
-
-        drawRuler(cx - 105, baseY, bottomLineY, height);
-        drawBlock(leftX, leftY, blockWLeft, blockHLeft, "#1569d8", state.leftMass, "左のおもり", true, baseY);
-        drawBlock(rightX, rightY, blockWRight, blockHRight, "#2fa848", state.rightMass, "右のおもり", false, baseY);
-
-        const vectorBaseX = Math.max(78, cx - 310);
-        const vectorBaseY = Math.max(300, height * 0.50);
-        if (elements.showVelocity.checked && Math.abs(state.velocity) > 0.01) {
-          const maxVectorLength = 120;
-          const vLen = Math.min(Math.abs(state.velocity), GRAPH_SPEED_MAX) / GRAPH_SPEED_MAX * maxVectorLength * Math.sign(state.velocity);
-          drawArrow(simCtx, vectorBaseX, vectorBaseY, vLen, varBlue(), "速度 v", true);
-        }
-        if (elements.showAcceleration.checked) {
-          const aLen = clamp(Math.abs(state.acceleration) * 70, 12, 82) * Math.sign(state.acceleration);
-          drawArrow(simCtx, vectorBaseX, vectorBaseY + 108, aLen, varRed(), "加速度 a", true);
-        }
-      }
-
-      function varBlue() {
-        return getComputedStyle(document.documentElement).getPropertyValue("--blue").trim() || "#0b63e6";
-      }
-
-      function varRed() {
-        return getComputedStyle(document.documentElement).getPropertyValue("--red").trim() || "#e81e1e";
-      }
-
-      function drawRuler(x, topY, bottomLineY, height) {
-        const rulerTop = Math.max(184, topY - 12);
-        const rulerBottom = Math.min(height - 42, bottomLineY + 25);
-        simCtx.save();
-        simCtx.strokeStyle = "#778393";
-        simCtx.fillStyle = "#1e2937";
-        simCtx.lineWidth = 2;
-        simCtx.beginPath();
-        simCtx.moveTo(x, rulerTop);
-        simCtx.lineTo(x, rulerBottom);
-        simCtx.stroke();
-        simCtx.font = "14px sans-serif";
-        simCtx.textAlign = "right";
-        simCtx.textBaseline = "middle";
-        for (let m = 0; m <= 1.0; m += 0.1) {
-          const y = topY + m * PIXELS_PER_METER;
-          if (y < rulerTop - 1 || y > rulerBottom + 1) continue;
-          const major = Math.abs((m * 10) % 2) < 0.01;
-          simCtx.beginPath();
-          simCtx.moveTo(x, y);
-          simCtx.lineTo(x - (major ? 26 : 13), y);
-          simCtx.stroke();
-          if (major) {
-            const label = m === 0 ? "0" : m.toFixed(1);
-            simCtx.fillText(label, x - 34, y);
-          }
-        }
-        simCtx.fillText("1.0 m", x - 34, topY + PIXELS_PER_METER);
-        simCtx.restore();
-      }
-
-      function drawBlock(x, centerY, w, h, color, mass, label, isLeft, labelCenterY) {
-        const top = centerY - h / 2;
-        const left = x - w / 2;
-        const radius = 6;
-        simCtx.save();
-        simCtx.fillStyle = "rgba(0,0,0,0.14)";
-        simCtx.filter = "blur(6px)";
-        drawRoundedRect(simCtx, left + 8, top + h + 8, w, 14, 6);
-        simCtx.fill();
-        simCtx.filter = "none";
-        const blockGrad = simCtx.createLinearGradient(left, top, left + w, top + h);
-        blockGrad.addColorStop(0, "#8dc3ff");
-        blockGrad.addColorStop(0.16, color);
-        blockGrad.addColorStop(1, "#0b3f8c");
-        if (!isLeft) {
-          blockGrad.addColorStop(0, "#95dd8d");
-          blockGrad.addColorStop(0.25, color);
-          blockGrad.addColorStop(1, "#13612b");
-        }
-        simCtx.fillStyle = blockGrad;
-        simCtx.strokeStyle = isLeft ? "#074aa5" : "#13712d";
-        simCtx.lineWidth = 3;
-        drawRoundedRect(simCtx, left, top, w, h, radius);
-        simCtx.fill();
-        simCtx.stroke();
-        simCtx.fillStyle = "rgba(255,255,255,0.24)";
-        simCtx.fillRect(left + 8, top + 8, Math.max(5, w - 16), 9);
-        simCtx.fillStyle = "#6f4b27";
-        simCtx.beginPath();
-        simCtx.arc(x, top, 5, 0, Math.PI * 2);
-        simCtx.fill();
-        simCtx.strokeStyle = "rgba(255,255,255,0.9)";
-        simCtx.lineWidth = 2;
-        simCtx.beginPath();
-        simCtx.moveTo(x - 7, centerY);
-        simCtx.lineTo(x + 7, centerY);
-        simCtx.moveTo(x, centerY - 7);
-        simCtx.lineTo(x, centerY + 7);
-        simCtx.stroke();
-
-        const canvasWidth = simCtx.canvas.getBoundingClientRect().width;
-        const cardX = clamp(isLeft ? x - 194 : x + 64, 12, canvasWidth - 144);
-        const cardY = labelCenterY - h / 2 - 88;
-        drawRoundedRect(simCtx, cardX, cardY, 132, 78, 10);
-        simCtx.fillStyle = "rgba(255,255,255,0.95)";
-        simCtx.fill();
-        simCtx.strokeStyle = "#ced8e4";
-        simCtx.lineWidth = 1.5;
-        simCtx.stroke();
-        simCtx.fillStyle = "#142033";
-        simCtx.font = "800 16px sans-serif";
-        simCtx.textAlign = "center";
-        simCtx.fillText(label, cardX + 66, cardY + 25);
-        simCtx.fillStyle = isLeft ? varBlue() : "#149438";
-        simCtx.font = "900 30px sans-serif";
-        simCtx.fillText(`${mass} g`, cardX + 66, cardY + 58);
-        simCtx.restore();
+      function updateTimeDisplay() {
+        elements.timeDisplay.textContent = formatTime(state.simTime);
       }
 
       function drawGraph() {
-        const { width, height } = resizeCanvas(elements.graphCanvas);
-        graphCtx.clearRect(0, 0, width, height);
-        const pad = { left: 56, right: 18, top: 36, bottom: 52 };
-        const plotW = width - pad.left - pad.right;
-        const plotH = height - pad.top - pad.bottom;
-        const maxT = GRAPH_TIME_MAX;
-        const maxV = GRAPH_SPEED_MAX;
+        const canvas = elements.graph;
+        const context = canvas.getContext("2d");
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width < 10 || rect.height < 10) return;
 
-        graphCtx.fillStyle = "#fff";
-        graphCtx.fillRect(0, 0, width, height);
-        graphCtx.strokeStyle = "#d1dae6";
-        graphCtx.lineWidth = 1;
-        graphCtx.setLineDash([3, 4]);
-        for (let i = 0; i <= 5; i++) {
-          const x = pad.left + plotW * i / 5;
-          graphCtx.beginPath();
-          graphCtx.moveTo(x, pad.top);
-          graphCtx.lineTo(x, pad.top + plotH);
-          graphCtx.stroke();
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
+        const pixelWidth = Math.round(width * ratio);
+        const pixelHeight = Math.round(height * ratio);
+        if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+          canvas.width = pixelWidth;
+          canvas.height = pixelHeight;
         }
-        for (let i = 0; i <= 4; i++) {
-          const y = pad.top + plotH * i / 4;
-          graphCtx.beginPath();
-          graphCtx.moveTo(pad.left, y);
-          graphCtx.lineTo(pad.left + plotW, y);
-          graphCtx.stroke();
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        context.clearRect(0, 0, width, height);
+
+        const style = getComputedStyle(document.documentElement);
+        const ink = style.getPropertyValue("--ink").trim();
+        const muted = style.getPropertyValue("--muted").trim();
+        const line = style.getPropertyValue("--line").trim();
+        const blue = style.getPropertyValue("--blue").trim();
+
+        const margin = { top: 17, right: 18, bottom: 48, left: 67 };
+        const plotWidth = Math.max(10, width - margin.left - margin.right);
+        const plotHeight = Math.max(10, height - margin.top - margin.bottom);
+        const endVelocity = state.accelerationLeft * state.simTime;
+        const timeMax = GRAPH_TIME_MAX;
+        const velocityMax = GRAPH_VELOCITY_MAX;
+        const velocityMin = 0;
+        canvas.dataset.timeMax = String(timeMax);
+        canvas.dataset.velocityMin = String(velocityMin);
+        canvas.dataset.velocityMax = String(velocityMax);
+        const x = (time) => margin.left + (time / timeMax) * plotWidth;
+        const y = (velocity) => margin.top + ((velocityMax - velocity) / (velocityMax - velocityMin)) * plotHeight;
+
+        context.lineWidth = 1;
+        context.strokeStyle = line;
+        context.setLineDash([3, 3]);
+        for (let i = 0; i <= 5; i += 1) {
+          const xPos = margin.left + (plotWidth * i) / 5;
+          context.beginPath();
+          context.moveTo(xPos, margin.top);
+          context.lineTo(xPos, margin.top + plotHeight);
+          context.stroke();
         }
-        graphCtx.setLineDash([]);
-
-        graphCtx.strokeStyle = "#6c7583";
-        graphCtx.lineWidth = 1.5;
-        graphCtx.beginPath();
-        graphCtx.moveTo(pad.left, pad.top);
-        graphCtx.lineTo(pad.left, pad.top + plotH);
-        graphCtx.lineTo(pad.left + plotW, pad.top + plotH);
-        graphCtx.stroke();
-
-        graphCtx.fillStyle = "#111827";
-        graphCtx.font = "15px sans-serif";
-        graphCtx.textAlign = "center";
-        graphCtx.fillText("時間 t (s)", pad.left + plotW / 2, height - 12);
-        graphCtx.save();
-        graphCtx.translate(16, pad.top + plotH / 2);
-        graphCtx.rotate(-Math.PI / 2);
-        graphCtx.fillText("速度 v (m/s)", 0, 0);
-        graphCtx.restore();
-
-        graphCtx.font = "13px sans-serif";
-        graphCtx.textAlign = "center";
-        for (let i = 0; i <= 5; i++) {
-          const t = maxT * i / 5;
-          const x = pad.left + plotW * i / 5;
-          graphCtx.fillText(t.toFixed(1), x, pad.top + plotH + 24);
+        for (let i = 0; i <= 5; i += 1) {
+          const yPos = margin.top + (plotHeight * i) / 5;
+          context.beginPath();
+          context.moveTo(margin.left, yPos);
+          context.lineTo(margin.left + plotWidth, yPos);
+          context.stroke();
         }
-        graphCtx.textAlign = "right";
-        for (let i = 0; i <= 4; i++) {
-          const value = maxV - maxV * i / 4;
-          const y = pad.top + plotH * i / 4 + 4;
-          graphCtx.fillText(value.toFixed(1), pad.left - 8, y);
-        }
+        context.setLineDash([]);
 
-        if (state.graphPoints.length > 1) {
-          graphCtx.strokeStyle = varBlue();
-          graphCtx.lineWidth = 4;
-          graphCtx.lineJoin = "round";
-          graphCtx.lineCap = "round";
-          graphCtx.beginPath();
-          const visiblePoints = state.graphPoints.filter(point => point.t <= maxT);
-          if (visiblePoints.length === 0 && state.graphPoints.length > 0) {
-            visiblePoints.push({ t: 0, v: 0 });
-          }
-          visiblePoints.forEach((point, index) => {
-            const speed = Math.min(Math.abs(point.v), maxV);
-            const x = pad.left + (point.t / maxT) * plotW;
-            const y = pad.top + ((maxV - speed) / maxV) * plotH;
-            if (index === 0) graphCtx.moveTo(x, y);
-            else graphCtx.lineTo(x, y);
-          });
-          graphCtx.stroke();
+        context.strokeStyle = "#8392a7";
+        context.lineWidth = 1.2;
+        context.beginPath();
+        context.moveTo(margin.left, margin.top);
+        context.lineTo(margin.left, margin.top + plotHeight);
+        context.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+        context.stroke();
+
+        context.fillStyle = ink;
+        context.font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        context.textAlign = "center";
+        context.textBaseline = "top";
+        for (let i = 0; i <= 5; i += 1) {
+          const value = (timeMax * i) / 5;
+          context.fillText(value.toFixed(value < 10 ? 1 : 0), margin.left + (plotWidth * i) / 5, margin.top + plotHeight + 7);
         }
 
-        graphCtx.strokeStyle = varBlue();
-        graphCtx.lineWidth = 4;
-        graphCtx.beginPath();
-        graphCtx.moveTo(width - 76, 22);
-        graphCtx.lineTo(width - 52, 22);
-        graphCtx.stroke();
-        graphCtx.fillStyle = "#111827";
-        graphCtx.font = "italic 15px sans-serif";
-        graphCtx.textAlign = "left";
-        graphCtx.fillText("v–t", width - 42, 27);
+        context.textAlign = "right";
+        context.textBaseline = "middle";
+        for (let i = 0; i <= 5; i += 1) {
+          const value = velocityMax - ((velocityMax - velocityMin) * i) / 5;
+          const label = Math.abs(value) < 1e-9 ? "0.0" : value.toFixed(1);
+          context.fillText(label, margin.left - 9, margin.top + (plotHeight * i) / 5);
+        }
+
+        context.fillStyle = muted;
+        context.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        context.textAlign = "center";
+        context.textBaseline = "bottom";
+        context.fillText("時間 𝑡 (s)", margin.left + plotWidth / 2, height - 2);
+        context.save();
+        context.translate(17, margin.top + plotHeight / 2);
+        context.rotate(-Math.PI / 2);
+        context.fillText("速度 𝑣ₗ (m/s)", 0, 0);
+        context.restore();
+
+        context.strokeStyle = blue;
+        context.fillStyle = blue;
+        context.lineWidth = 3;
+        context.lineCap = "round";
+        if (state.simTime > 0) {
+          context.beginPath();
+          context.moveTo(x(0), y(0));
+          context.lineTo(x(state.simTime), y(endVelocity));
+          context.stroke();
+        } else {
+          context.beginPath();
+          context.arc(x(0), y(0), 3.5, 0, Math.PI * 2);
+          context.fill();
+        }
+
+        if (state.mode === "autoStopped" && state.simTime > 0) {
+          const pointX = x(state.simTime);
+          const pointY = y(endVelocity);
+
+          context.save();
+          context.setLineDash([5, 4]);
+          context.strokeStyle = muted;
+          context.lineWidth = 1.2;
+          context.beginPath();
+          context.moveTo(margin.left, pointY);
+          context.lineTo(pointX, pointY);
+          context.lineTo(pointX, y(0));
+          context.stroke();
+          context.setLineDash([]);
+
+          context.fillStyle = blue;
+          context.beginPath();
+          context.arc(pointX, pointY, 4, 0, Math.PI * 2);
+          context.fill();
+
+          const slopeText = `傾き（加速度） 𝑎ₗ = ${state.accelerationLeft.toFixed(2)} m/s²`;
+          context.font = '600 13px "BIZ UDPGothic", "Yu Gothic UI", Meiryo, sans-serif';
+          const boxWidth = Math.ceil(context.measureText(slopeText).width) + 14;
+          const boxHeight = 27;
+          let boxX = pointX + 12;
+          let boxY = pointY - boxHeight - 10;
+          if (boxX + boxWidth > margin.left + plotWidth - 3) boxX = pointX - boxWidth - 12;
+          if (boxX < margin.left + 3) boxX = margin.left + 3;
+          if (boxY < margin.top + 3) boxY = pointY + 10;
+          if (boxY + boxHeight > margin.top + plotHeight - 3) boxY = pointY - boxHeight - 10;
+
+          context.fillStyle = "rgba(255,255,255,0.96)";
+          context.strokeStyle = line;
+          context.lineWidth = 1;
+          context.fillRect(boxX, boxY, boxWidth, boxHeight);
+          context.strokeRect(boxX, boxY, boxWidth, boxHeight);
+          context.fillStyle = ink;
+          context.textAlign = "left";
+          context.textBaseline = "middle";
+          context.fillText(slopeText, boxX + 7, boxY + boxHeight / 2);
+          context.restore();
+        }
       }
 
-      function drawAll() {
-        drawSim();
+      function render() {
+        updateMassDisplays();
+        updateControls();
+        updateTimeDisplay();
+        updateApparatus();
         drawGraph();
       }
 
-      function bindEvents() {
-        elements.leftMassRange.addEventListener("input", event => setMass("left", event.target.value));
-        elements.rightMassRange.addEventListener("input", event => setMass("right", event.target.value));
-        elements.leftMassInput.addEventListener("change", event => setMass("left", event.target.value));
-        elements.rightMassInput.addEventListener("change", event => setMass("right", event.target.value));
-
-        elements.startButton.addEventListener("click", () => {
-          if (!state.running) {
-            state.running = true;
-            state.lastFrame = null;
-            requestAnimationFrame(step);
-          }
-        });
-
-        elements.pauseButton.addEventListener("click", () => {
-          state.running = false;
-          state.lastFrame = null;
-          updateReadouts();
-        });
-
-        elements.resetButton.addEventListener("click", resetSimulation);
-
-        [elements.showVelocity, elements.showAcceleration].forEach(input => {
-          input.addEventListener("change", drawAll);
-        });
-
-        elements.showStopwatch.addEventListener("change", () => {
-          elements.stopwatchPanel.classList.toggle("hidden", !elements.showStopwatch.checked);
-        });
-
-        elements.showSettings.addEventListener("change", () => {
-          elements.settingsPanel.style.display = elements.showSettings.checked ? "" : "none";
-        });
-
-        window.addEventListener("resize", drawAll);
+      function setMass(side, rawValue) {
+        if (state.mode === "running") return;
+        const current = side === "left" ? state.leftMass : state.rightMass;
+        const normalized = side === "left"
+          ? normalizeMass(rawValue, current, state.rightMass + MASS_STEP, MASS_MAX)
+          : normalizeMass(rawValue, current, MASS_MIN, state.leftMass - MASS_STEP);
+        if (side === "left") {
+          state.leftMass = normalized;
+        } else {
+          state.rightMass = normalized;
+        }
+        state.accelerationLeft = calculateAcceleration(state.leftMass, state.rightMass);
+        resetMotion(false);
       }
 
-      bindEvents();
-      resetSimulation();
+      function getMeasurementHitTime() {
+        if (Math.abs(state.accelerationLeft) < 1e-12) return Infinity;
+        return Math.sqrt((2 * Math.abs(MEASUREMENT_POSITION)) / Math.abs(state.accelerationLeft));
+      }
+
+      function autoStopAt(hitTime) {
+        state.simTime = hitTime;
+        state.mode = "autoStopped";
+        state.lastFrameTime = null;
+        state.animationFrameId = null;
+        elements.stateAnnouncement.textContent = "測定ラインで停止しました。リセットしてください。";
+        render();
+      }
+
+      function animationFrame(timestamp) {
+        if (state.mode !== "running") return;
+        if (state.lastFrameTime === null) state.lastFrameTime = timestamp;
+        const delta = clamp((timestamp - state.lastFrameTime) / 1000, 0, 0.05);
+        state.lastFrameTime = timestamp;
+        const previousTime = state.simTime;
+        const nextTime = previousTime + delta;
+
+        const hitTime = getMeasurementHitTime();
+        if (previousTime < hitTime && nextTime >= hitTime) {
+          autoStopAt(hitTime);
+          return;
+        }
+        if (previousTime >= hitTime) {
+          autoStopAt(previousTime);
+          return;
+        }
+
+        state.simTime = nextTime;
+        render();
+        state.animationFrameId = requestAnimationFrame(animationFrame);
+      }
+
+      function startMotion() {
+        if (state.mode === "running" || state.mode === "autoStopped") return;
+        state.mode = "running";
+        state.lastFrameTime = null;
+        elements.stateAnnouncement.textContent = "運動を開始しました。";
+        updateControls();
+        state.animationFrameId = requestAnimationFrame(animationFrame);
+      }
+
+      function pauseMotion() {
+        if (state.mode !== "running") return;
+        state.mode = "paused";
+        state.lastFrameTime = null;
+        if (state.animationFrameId !== null) cancelAnimationFrame(state.animationFrameId);
+        state.animationFrameId = null;
+        elements.stateAnnouncement.textContent = "一時停止しました。";
+        render();
+      }
+
+      function resetMotion(announce = true) {
+        if (state.animationFrameId !== null) cancelAnimationFrame(state.animationFrameId);
+        state.mode = "idle";
+        state.simTime = 0;
+        state.lastFrameTime = null;
+        state.animationFrameId = null;
+        if (announce) elements.stateAnnouncement.textContent = "初期状態に戻しました。";
+        render();
+      }
+
+      function bindMassControls(range, input, side) {
+        range.addEventListener("input", () => setMass(side, range.value));
+        input.addEventListener("change", () => setMass(side, input.value));
+        input.addEventListener("blur", () => setMass(side, input.value));
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            setMass(side, input.value);
+            input.blur();
+          }
+        });
+      }
+
+      bindMassControls(elements.leftMassRange, elements.leftMassInput, "left");
+      bindMassControls(elements.rightMassRange, elements.rightMassInput, "right");
+      elements.startButton.addEventListener("click", startMotion);
+      elements.pauseButton.addEventListener("click", pauseMotion);
+      elements.resetButton.addEventListener("click", () => resetMotion(true));
+
+      const resizeObserver = new ResizeObserver(drawGraph);
+      resizeObserver.observe(elements.graph);
+      window.addEventListener("resize", drawGraph);
+
+      createAxisTicks();
+      state.accelerationLeft = calculateAcceleration(state.leftMass, state.rightMass);
+      render();
+
+      window.__atwoodTest = Object.freeze({
+        calculateAcceleration,
+        getState: () => ({
+          leftMass: state.leftMass,
+          rightMass: state.rightMass,
+          accelerationLeft: state.accelerationLeft,
+          simTime: state.simTime,
+          mode: state.mode,
+          ...getMotionAt(state.simTime)
+        }),
+        getMeasurementHitTime
+      });
     })();
   </script>
 </body>

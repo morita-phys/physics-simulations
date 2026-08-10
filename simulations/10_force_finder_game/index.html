@@ -27,7 +27,8 @@
 
     body {
       margin: 0;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
       background: #f3f6fa;
       color: var(--ink);
       font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
@@ -38,45 +39,47 @@
     }
 
     .app {
-      min-height: 100vh;
-      padding: 18px;
+      height: 100vh;
+      max-width: 100vw;
+      padding: 10px;
       display: grid;
       grid-template-rows: auto 1fr;
-      gap: 12px;
+      gap: 8px;
+      overflow: hidden;
     }
 
     .topbar {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
-      gap: 22px;
+      gap: 12px;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(34px, 4vw, 56px);
+      font-size: clamp(30px, 3vw, 42px);
       line-height: 1;
       letter-spacing: 0;
     }
 
     .top-status {
       display: grid;
-      grid-template-columns: auto auto minmax(220px, 1fr);
+      grid-template-columns: auto auto minmax(200px, 1fr);
       align-items: stretch;
-      gap: 10px;
+      gap: 8px;
       min-width: 0;
     }
 
     .status-chip,
     .feedback {
-      min-height: 54px;
-      padding: 10px 14px;
+      min-height: 44px;
+      padding: 7px 10px;
       border: 2px solid #a9c1df;
       border-radius: 8px;
       background: #fff;
       display: flex;
       align-items: center;
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 900;
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     }
@@ -92,11 +95,33 @@
       overflow-wrap: anywhere;
     }
 
+    .top-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .utility-button {
+      min-height: 44px;
+      padding: 7px 13px;
+      border: 1.5px solid #8fa1b7;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .utility-button:hover {
+      background: #eef5fc;
+    }
+
     .main-grid {
       display: grid;
-      grid-template-columns: minmax(420px, 1.35fr) minmax(320px, 0.95fr) minmax(360px, 1.1fr);
-      gap: 12px;
+      grid-template-columns: minmax(390px, 1.25fr) minmax(310px, 0.95fr) minmax(350px, 1.05fr);
+      gap: 8px;
       min-height: 0;
+      overflow: hidden;
     }
 
     .panel {
@@ -124,12 +149,12 @@
     .panel-title {
       display: inline-flex;
       align-items: center;
-      min-height: 36px;
-      margin: 12px 14px 0;
-      padding: 6px 16px;
+      min-height: 32px;
+      margin: 8px 10px 0;
+      padding: 5px 12px;
       border-radius: 5px;
       color: #fff;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 900;
       line-height: 1.1;
     }
@@ -151,7 +176,7 @@
     }
 
     .panel-body {
-      padding: 18px 20px 16px;
+      padding: 10px 12px;
     }
 
     .instruction {
@@ -162,20 +187,50 @@
 
     .info-box {
       width: min(100%, 520px);
-      margin: 0 auto 16px;
-      padding: 16px 22px;
+      margin: 0 auto 8px;
+      padding: 7px 12px;
       border: 1.5px solid var(--blue);
       border-radius: 8px;
       background: #f8fbff;
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 800;
-      line-height: 1.9;
+      line-height: 1.5;
     }
 
     .scene-wrap {
       display: flex;
       justify-content: center;
-      margin: 0 auto 12px;
+      margin: 0 auto 6px;
+    }
+
+    .scene-svg {
+      width: 100%;
+      max-height: 190px;
+    }
+
+    .target-object {
+      cursor: pointer;
+    }
+
+    .target-object .target-shape {
+      transition: stroke 0.15s ease, stroke-width 0.15s ease, filter 0.15s ease;
+    }
+
+    .target-object:hover .target-shape,
+    .target-object:focus .target-shape {
+      stroke: #e38b00;
+      stroke-width: 4;
+    }
+
+    .target-object.selected .target-shape {
+      stroke: #f59e0b;
+      stroke-width: 5;
+      filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.55));
+    }
+
+    .fbd-svg {
+      width: 100%;
+      max-height: 255px;
     }
 
     svg {
@@ -187,22 +242,22 @@
     .actor-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 8px;
       margin: 0;
     }
 
     .actor-card {
       display: grid;
       place-items: center;
-      gap: 6px;
-      min-height: 104px;
-      padding: 10px 8px;
+      gap: 3px;
+      min-height: 78px;
+      padding: 5px 6px;
       border: 2px solid var(--blue);
       border-radius: 8px;
       background: #fff;
       cursor: pointer;
       font-weight: 900;
-      font-size: 18px;
+      font-size: 16px;
     }
 
     .actor-card:nth-child(2) {
@@ -217,10 +272,18 @@
       border-color: #d97706;
     }
 
-    .actor-card:hover,
+    .actor-card:not(:disabled):hover,
     .choice-card:not(:disabled):hover {
       transform: translateY(-1px);
       box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+    }
+
+    .actor-card:disabled {
+      background: var(--disabled);
+      color: #8792a2;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
 
     .actor-card.selected,
@@ -235,20 +298,20 @@
     }
 
     .actor-icon {
-      width: 58px;
-      height: 58px;
+      width: 42px;
+      height: 42px;
     }
 
     .middle-column {
       display: grid;
       grid-template-rows: auto auto 1fr;
-      gap: 12px;
+      gap: 8px;
       min-height: 0;
     }
 
     .steps-block {
-      margin-top: 6px;
-      padding-top: 4px;
+      margin-top: 2px;
+      padding-top: 2px;
     }
 
     .steps {
@@ -256,8 +319,8 @@
       margin: 0;
       padding: 0 4px;
       display: grid;
-      gap: 10px;
-      font-size: 16px;
+      gap: 5px;
+      font-size: 14px;
       font-weight: 800;
     }
 
@@ -266,7 +329,7 @@
       grid-template-columns: 22px 34px 1fr auto;
       align-items: center;
       gap: 8px;
-      min-height: 34px;
+      min-height: 28px;
     }
 
     .step-marker {
@@ -276,8 +339,8 @@
     }
 
     .step-num {
-      width: 30px;
-      height: 30px;
+      width: 26px;
+      height: 26px;
       border-radius: 999px;
       display: grid;
       place-items: center;
@@ -298,18 +361,23 @@
     .choice-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 8px;
+    }
+
+    .choice-grid.six-options .choice-card {
+      min-height: 50px;
+      font-size: 14px;
     }
 
     .choice-card {
-      min-height: 68px;
-      padding: 10px 12px;
+      min-height: 56px;
+      padding: 7px 8px;
       border: 1.5px solid #aeb9c8;
       border-radius: 7px;
       background: #fff;
       color: var(--ink);
       cursor: pointer;
-      font-size: 17px;
+      font-size: 15px;
       font-weight: 900;
       display: flex;
       align-items: center;
@@ -328,10 +396,17 @@
 
     .arrow-mark {
       color: var(--blue);
-      font-size: 38px;
+      font-size: 31px;
       line-height: 1;
       font-weight: 900;
       flex: 0 0 auto;
+    }
+
+    .direction-vector {
+      width: 40px;
+      height: 32px;
+      flex: 0 0 auto;
+      overflow: visible;
     }
 
     .choice-text {
@@ -348,20 +423,20 @@
     .right-column {
       display: grid;
       grid-template-rows: auto 1fr;
-      gap: 12px;
+      gap: 8px;
       min-height: 0;
     }
 
     .current-list {
       display: grid;
-      gap: 14px;
-      font-size: 19px;
+      gap: 6px;
+      font-size: 16px;
       font-weight: 900;
     }
 
     .current-row {
       display: grid;
-      grid-template-columns: 120px 1fr;
+      grid-template-columns: 104px 1fr;
       align-items: baseline;
       gap: 8px;
     }
@@ -376,8 +451,8 @@
       justify-content: center;
       gap: 10px;
       width: min(100%, 280px);
-      margin: 22px auto 0;
-      padding: 14px 18px;
+      margin: 10px auto 0;
+      padding: 9px 14px;
       border: 1px solid #aeb9c8;
       border-radius: 8px;
       background: var(--blue);
@@ -390,6 +465,14 @@
       background: #e7ebf0;
       color: #8c96a5;
       cursor: not-allowed;
+    }
+
+    .next-button {
+      background: var(--green);
+    }
+
+    [hidden] {
+      display: none !important;
     }
 
     .add-button .circle {
@@ -408,23 +491,6 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-    }
-
-    .clear-mini {
-      border: 1px solid #aeb9c8;
-      border-radius: 6px;
-      background: #fff;
-      padding: 7px 12px;
-      color: #667085;
-      cursor: pointer;
-      font-weight: 800;
-    }
-
-    .diagram-note {
-      margin: 6px 0 0;
-      font-size: 14px;
-      line-height: 1.7;
-      font-weight: 700;
     }
 
     .feedback.error {
@@ -466,13 +532,45 @@
       font-size: 18px;
     }
 
+    .fbd-note {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .axis-line {
+      stroke: #9aa3ad;
+      stroke-width: 2;
+      stroke-dasharray: 8 6;
+      marker-end: url(#axisHead);
+    }
+
+    .axis-label {
+      fill: #667085;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
     @media (max-width: 1180px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+      }
+
       .app {
+        height: auto;
+        min-height: 100vh;
         padding: 12px;
+        overflow: visible;
       }
 
       .main-grid {
         grid-template-columns: 1fr;
+        overflow: visible;
       }
 
       .middle-column,
@@ -480,14 +578,147 @@
         grid-template-rows: auto;
       }
 
-      .topbar,
-      .top-status {
+      .topbar {
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+
+      .top-status {
+        grid-template-columns: auto auto minmax(220px, 1fr);
+      }
+
+      .top-actions {
+        justify-content: flex-end;
+      }
+    }
+
+    @media (min-width: 1181px) and (max-height: 700px) {
+      .app {
+        padding: 6px;
+        gap: 6px;
+      }
+
+      .topbar,
+      .top-status,
+      .top-actions,
+      .main-grid,
+      .middle-column,
+      .right-column {
+        gap: 6px;
+      }
+
+      h1 {
+        font-size: 30px;
+      }
+
+      .status-chip,
+      .feedback,
+      .utility-button {
+        min-height: 36px;
+        padding: 4px 8px;
+        font-size: 14px;
+      }
+
+      .panel-title {
+        min-height: 27px;
+        margin: 5px 7px 0;
+        padding: 3px 9px;
+        font-size: 15px;
+      }
+
+      .panel-body {
+        padding: 6px 8px;
+      }
+
+      .info-box {
+        margin-bottom: 4px;
+        padding: 4px 8px;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .scene-svg {
+        max-height: 154px;
+      }
+
+      .actor-grid,
+      .choice-grid {
+        gap: 6px;
+      }
+
+      .actor-card {
+        min-height: 58px;
+        padding: 2px 5px;
+        font-size: 14px;
+      }
+
+      .actor-icon {
+        width: 33px;
+        height: 33px;
+      }
+
+      .choice-card {
+        min-height: 43px;
+        padding: 3px 5px;
+        font-size: 14px;
+      }
+
+      .choice-grid.six-options .choice-card {
+        min-height: 40px;
+        font-size: 12px;
+      }
+
+      .direction-vector {
+        width: 32px;
+        height: 26px;
+      }
+
+      .arrow-mark {
+        font-size: 27px;
+      }
+
+      .steps {
+        gap: 2px;
+        font-size: 13px;
+      }
+
+      .step {
+        min-height: 24px;
+      }
+
+      .step-num {
+        width: 23px;
+        height: 23px;
+      }
+
+      .current-list {
+        gap: 3px;
+        font-size: 14px;
+      }
+
+      .current-row {
+        grid-template-columns: 92px 1fr;
+      }
+
+      .add-button {
+        margin-top: 6px;
+        padding: 6px 10px;
+      }
+
+      .fbd-svg {
+        max-height: 198px;
+      }
+
+      .fbd-note {
+        font-size: 10px;
       }
     }
 
     @media (max-width: 620px) {
+      .top-status {
+        grid-template-columns: 1fr;
+      }
+
       .actor-grid,
       .choice-grid {
         grid-template-columns: 1fr 1fr;
@@ -504,9 +735,13 @@
     <header class="topbar">
       <h1>力探しゲーム</h1>
       <div class="top-status" aria-live="polite">
-        <div class="status-chip">ステージ： 1 / 5　<span id="stageTitle">机の上の本</span></div>
-        <div class="status-chip">見つけた力の数： <span id="foundCount">0</span> / 2</div>
-        <div class="feedback" id="feedback">中央のカードを上から順に選んで、力を作りましょう。</div>
+        <div class="status-chip">ステージ： <span id="stageNumber">1</span> / 5　<span id="stageTitle">机の上の本</span></div>
+        <div class="status-chip">見つけた力の数： <span id="foundCount">0</span> / <span id="totalForceCount">2</span></div>
+        <div class="feedback" id="feedback">状況図の着目物体をクリックしましょう。</div>
+      </div>
+      <div class="top-actions">
+        <button class="utility-button" id="hintButton" type="button">ヒント</button>
+        <button class="utility-button" id="resetButton" type="button">リセット</button>
       </div>
     </header>
 
@@ -517,20 +752,13 @@
           <div class="info-box">
             <div>着目物体： <span id="targetText">本</span></div>
             <div>運動の状態： <span id="motionText">静止している（机の上に静止）</span></div>
+            <div id="conditionRow" hidden>条件： <span id="conditionText"></span></div>
           </div>
 
-          <div class="scene-wrap" aria-label="机の上に本が静止している横から見た図">
-            <svg viewBox="0 0 560 260" role="img">
-              <title>横から見た机の上の本</title>
-              <rect x="55" y="145" width="450" height="22" fill="#c7a16d" stroke="#111" stroke-width="2"></rect>
-              <rect x="78" y="167" width="18" height="60" fill="#d8d8d8" stroke="#111" stroke-width="2"></rect>
-              <rect x="470" y="167" width="18" height="60" fill="#d8d8d8" stroke="#111" stroke-width="2"></rect>
-              <g aria-label="本">
-                <rect x="205" y="95" width="154" height="50" rx="12" fill="#81c279" stroke="#111" stroke-width="2.2"></rect>
-                <path d="M350 95 C342 103 342 137 350 145 L378 145 L378 95 Z" fill="#f8fbff" stroke="#111" stroke-width="2.2"></path>
-                <path d="M355 103 H377 M354 111 H377 M354 119 H377 M355 127 H377 M357 135 H377" stroke="#9aa3ad" stroke-width="1.5"></path>
-                <text x="282" y="77" text-anchor="middle" font-size="17" font-weight="900" fill="#0c4f96">着目物体：本</text>
-              </g>
+          <div class="scene-wrap" id="sceneWrap">
+            <svg class="scene-svg" id="sceneSvg" viewBox="0 0 560 260" role="img">
+              <title id="sceneSvgTitle">横から見た机の上の本</title>
+              <g id="sceneLayer"></g>
             </svg>
           </div>
 
@@ -551,17 +779,17 @@
           </div>
         </section>
 
-        <section class="panel panel-blue" aria-labelledby="direction-title">
-          <div class="panel-title title-blue" id="direction-title">向きカードを選ぼう</div>
-          <div class="panel-body">
-            <div class="choice-grid" id="directionGrid"></div>
-          </div>
-        </section>
-
         <section class="panel" aria-labelledby="force-title" style="border-color:#b76500;">
           <div class="panel-title title-amber" id="force-title">力の名前カードを選ぼう</div>
           <div class="panel-body">
             <div class="choice-grid" id="forceGrid"></div>
+          </div>
+        </section>
+
+        <section class="panel panel-blue" aria-labelledby="direction-title">
+          <div class="panel-title title-blue" id="direction-title">向きカードを選ぼう</div>
+          <div class="panel-body">
+            <div class="choice-grid" id="directionGrid"></div>
           </div>
         </section>
       </div>
@@ -573,11 +801,17 @@
             <div class="current-list" aria-live="polite">
               <div class="current-row"><span>対象物体：</span><span id="currentTarget">本</span></div>
               <div class="current-row"><span>行為者：</span><span class="current-value" id="currentActor">未選択</span></div>
-              <div class="current-row"><span>向き：</span><span class="current-value" id="currentDirection">未選択</span></div>
               <div class="current-row"><span>力の名前：</span><span class="current-value" id="currentForce">未選択</span></div>
+              <div class="current-row"><span>向き：</span><span class="current-value" id="currentDirection">未選択</span></div>
             </div>
             <button class="add-button" id="addButton" type="button" disabled>
               自由物体図に追加 <span class="circle">→</span>
+            </button>
+            <button class="add-button next-button" id="nextButton" type="button" hidden>
+              次のステージへ <span class="circle">→</span>
+            </button>
+            <button class="add-button next-button" id="restartButton" type="button" hidden>
+              はじめから <span class="circle">↺</span>
             </button>
           </div>
         </section>
@@ -585,11 +819,10 @@
         <section class="panel panel-red" aria-labelledby="fbd-title">
           <div class="diagram-head">
             <div class="panel-title title-red" id="fbd-title">自由物体図（横から見た図）</div>
-            <button class="clear-mini" id="clearDiagramButton" type="button">すべてクリア</button>
           </div>
           <div class="panel-body">
             <div class="scene-wrap">
-              <svg id="fbdSvg" viewBox="0 0 420 270" role="img" aria-label="本の自由物体図">
+              <svg class="fbd-svg" id="fbdSvg" viewBox="0 0 420 270" role="img" aria-label="本の自由物体図">
                 <defs>
                   <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                     <path d="M 0 0 L 10 5 L 0 10 z" fill="#cf2d22"></path>
@@ -597,23 +830,18 @@
                   <marker id="previewHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                     <path d="M 0 0 L 10 5 L 0 10 z" fill="#e89a22"></path>
                   </marker>
+                  <marker id="axisHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#9aa3ad"></path>
+                  </marker>
                 </defs>
-                <line x1="70" y1="145" x2="360" y2="145" stroke="#9aa3ad" stroke-width="2" stroke-dasharray="8 6"></line>
-                <line x1="210" y1="228" x2="210" y2="45" stroke="#9aa3ad" stroke-width="2" stroke-dasharray="8 6"></line>
-                <path d="M360 145 l-12 -7 v14 z" fill="#9aa3ad"></path>
-                <path d="M210 45 l-7 12 h14 z" fill="#9aa3ad"></path>
-                <text x="372" y="153" fill="#667085" font-size="18" font-weight="900">x</text>
-                <text x="202" y="32" fill="#667085" font-size="18" font-weight="900">y</text>
-                <rect x="145" y="125" width="130" height="38" fill="#81c279" stroke="#111" stroke-width="2"></rect>
-                <text x="210" y="195" text-anchor="middle" font-size="17" font-weight="900">（本）</text>
+                <g id="axisLayer"></g>
+                <g id="bodyLayer"></g>
                 <g id="previewLayer"></g>
                 <g id="forceLayer"></g>
+                <g id="centerLayer"></g>
               </svg>
             </div>
-            <p class="diagram-note">
-              追加した力が、ここに矢印で表示されます。<br>
-              すべての力を見つけて、自由物体図を完成させましょう。
-            </p>
+            <p class="fbd-note">※ このゲームでは、矢印の長さは力の大きさを表していません。</p>
           </div>
         </section>
       </div>
@@ -622,55 +850,171 @@
   </div>
 
   <script>
-    const stage = {
-      title: "机の上の本",
-      target: "本",
-      motion: "静止している（机の上に静止）",
-      actors: [
-        { id: "earth", label: "地球", correct: true, icon: "earth" },
-        { id: "table", label: "机", correct: true, icon: "table" },
-        { id: "air", label: "空気", correct: false, icon: "air", feedback: "今回は空気の影響は考えません。空気抵抗や浮力を扱わない設定です。" },
-        { id: "velocity", label: "速度", correct: false, icon: "velocity", feedback: "速度は物体ではないので、力を及ぼす行為者にはなれません。" }
-      ],
-      directions: [
-        { id: "up", label: "鉛直上向き", note: "（面に垂直上向き）", mark: "↑" },
-        { id: "down", label: "鉛直下向き", note: "（重力の向き）", mark: "↓" },
-        { id: "left", label: "水平方向左向き", note: "", mark: "←" },
-        { id: "right", label: "水平方向右向き", note: "", mark: "→" }
-      ],
-      forceNames: ["重力", "垂直抗力", "摩擦力", "空気抵抗"],
-      forces: [
-        {
-          actorId: "earth",
-          directionId: "down",
-          forceName: "重力",
-          arrow: "down",
-          directionFeedback: "地球が本を引く力は、鉛直下向きにはたらきます。",
-          forceFeedback: "地球から本が受ける力は重力です。"
-        },
-        {
-          actorId: "table",
-          directionId: "up",
-          forceName: "垂直抗力",
-          arrow: "up",
-          directionFeedback: "机が本を押す力は、接触面に垂直な上向きにはたらきます。",
-          forceFeedback: "机から本への、面に垂直な力は垂直抗力です。摩擦力は接触面に沿う向きにはたらきます。"
-        }
-      ]
+    const BASIC_DIRECTIONS = [
+      { id: "up", label: "鉛直上向き", dx: 0, dy: -1 },
+      { id: "down", label: "鉛直下向き", dx: 0, dy: 1 },
+      { id: "left", label: "水平方向左向き", dx: -1, dy: 0 },
+      { id: "right", label: "水平方向右向き", dx: 1, dy: 0 }
+    ];
+
+    const SLOPE_DIRECTIONS = [
+      { id: "up", label: "鉛直上向き", dx: 0, dy: -1 },
+      { id: "down", label: "鉛直下向き", dx: 0, dy: 1 },
+      { id: "slope-up", label: "斜面に沿って上向き", dx: 0.866, dy: -0.5 },
+      { id: "slope-down", label: "斜面に沿って下向き", dx: -0.866, dy: 0.5 },
+      { id: "normal-away", label: "斜面に垂直で、斜面から離れる向き", dx: -0.5, dy: -0.866 },
+      { id: "normal-toward", label: "斜面に垂直で、斜面へ向かう向き", dx: 0.5, dy: 0.866 }
+    ];
+
+    const STANDARD_AXES = {
+      x: { dx: 1, dy: 0 },
+      y: { dx: 0, dy: -1 }
     };
 
+    const SLOPE_AXES = {
+      x: { dx: 0.866, dy: -0.5 },
+      y: { dx: -0.5, dy: -0.866 }
+    };
+
+    function copyDirections(source) {
+      return source.map(function (direction) {
+        return Object.assign({}, direction);
+      });
+    }
+
+    const stages = [
+      {
+        id: "stage1",
+        title: "机の上の本",
+        target: "本",
+        motion: "静止している（机の上に静止）",
+        condition: "",
+        sceneType: "book-on-table",
+        sceneLabel: "机の上に本が静止している横から見た図",
+        actors: [
+          { id: "earth", label: "地球", icon: "earth" },
+          { id: "table", label: "机", icon: "table" },
+          { id: "air", label: "空気", icon: "air", feedback: "今回は空気の影響は考えません。" },
+          { id: "velocity", label: "速度", icon: "velocity", feedback: "速度は物体ではないので、力を及ぼす行為者にはなれません。" }
+        ],
+        directions: copyDirections(BASIC_DIRECTIONS),
+        forceNames: ["重力", "垂直抗力", "摩擦力", "空気抵抗"],
+        forces: [
+          { id: "stage1-gravity", actorId: "earth", directionId: "down", forceName: "重力", directionFeedback: "地球と本の位置関係に注目して、向きを考え直してみよう。" },
+          { id: "stage1-normal", actorId: "table", directionId: "up", forceName: "垂直抗力", directionFeedback: "机が本をこの向きに押しているでしょうか。接触面に注目して考え直してみよう。" }
+        ],
+        axes: STANDARD_AXES,
+        fbd: { shape: "rect", label: "本", angle: 0, fill: "#81c279" }
+      },
+      {
+        id: "stage2",
+        title: "糸でつるされたおもり",
+        target: "おもり",
+        motion: "静止している",
+        condition: "",
+        sceneType: "hanging-mass",
+        sceneLabel: "天井から糸でつるされたおもりの横から見た図",
+        actors: [
+          { id: "earth", label: "地球", icon: "earth" },
+          { id: "string", label: "糸", icon: "string" },
+          { id: "ceiling", label: "天井", icon: "ceiling", feedback: "天井は、おもりに直接接触していません。おもりへ直接力を及ぼす相手を探そう。" },
+          { id: "air", label: "空気", icon: "air", feedback: "今回は空気の影響は考えません。" }
+        ],
+        directions: copyDirections(BASIC_DIRECTIONS),
+        forceNames: ["重力", "張力", "垂直抗力", "空気抵抗"],
+        forces: [
+          { id: "stage2-gravity", actorId: "earth", directionId: "down", forceName: "重力", directionFeedback: "地球とおもりの位置関係に注目して、向きを考え直してみよう。" },
+          { id: "stage2-tension", actorId: "string", directionId: "up", forceName: "張力", directionFeedback: "糸がおもりをどの向きに引いているか考え直してみよう。" }
+        ],
+        axes: STANDARD_AXES,
+        fbd: { shape: "circle", label: "おもり", fill: "#9aa3ad" }
+      },
+      {
+        id: "stage3",
+        title: "なめらかな斜面上で手に支えられた物体",
+        target: "斜面上の物体",
+        motion: "静止している",
+        condition: "斜面はなめらかで、摩擦は考えない",
+        sceneType: "smooth-incline",
+        sceneLabel: "右上がりのなめらかな斜面上で手に支えられた物体の横から見た図",
+        actors: [
+          { id: "earth", label: "地球", icon: "earth" },
+          { id: "slope", label: "斜面", icon: "slope" },
+          { id: "hand", label: "手", icon: "hand" },
+          { id: "air", label: "空気", icon: "air", feedback: "今回は空気の影響は考えません。" }
+        ],
+        directions: copyDirections(SLOPE_DIRECTIONS),
+        forceNames: ["重力", "垂直抗力", "摩擦力", "手から受ける力"],
+        forces: [
+          { id: "stage3-gravity", actorId: "earth", directionId: "down", forceName: "重力", directionFeedback: "地球と物体の位置関係に注目して、向きを考え直してみよう。" },
+          { id: "stage3-normal", actorId: "slope", directionId: "normal-away", forceName: "垂直抗力", directionFeedback: "斜面が物体をどの向きに押すか、接触面に注目しよう。" },
+          { id: "stage3-hand-force", actorId: "hand", directionId: "slope-up", forceName: "手から受ける力", directionFeedback: "手が物体を支えている向きを、斜面に沿って考えよう。" }
+        ],
+        axes: SLOPE_AXES,
+        fbd: { shape: "rect", label: "物体", angle: -30, fill: "#81c279" }
+      },
+      {
+        id: "stage4",
+        title: "上向きに投げられたボール",
+        target: "ボール",
+        motion: "手から離れた直後・上向きに運動中",
+        condition: "空気抵抗は考えない",
+        sceneType: "thrown-ball",
+        sceneLabel: "手から離れて上向きに運動するボールの横から見た図",
+        actors: [
+          { id: "earth", label: "地球", icon: "earth" },
+          { id: "hand", label: "手", icon: "hand", feedback: "ボールはすでに手から離れています。接触している相手を確認しよう。" },
+          { id: "air", label: "空気", icon: "air", feedback: "今回は空気抵抗を考えません。" },
+          { id: "velocity", label: "速度", icon: "velocity", feedback: "速度は物体ではないので、力を及ぼす行為者にはなれません。" }
+        ],
+        directions: copyDirections(BASIC_DIRECTIONS),
+        forceNames: ["重力", "手から受ける力", "空気抵抗", "垂直抗力"],
+        forces: [
+          { id: "stage4-gravity", actorId: "earth", directionId: "down", forceName: "重力", directionFeedback: "ボールの運動方向ではなく、地球との位置関係に注目しよう。" }
+        ],
+        axes: STANDARD_AXES,
+        fbd: { shape: "circle", label: "ボール", fill: "#f2a65a" }
+      },
+      {
+        id: "stage5",
+        title: "粗い床を右向きに滑る箱",
+        target: "箱",
+        motion: "右向きに運動中",
+        condition: "粗い床・手から離れている",
+        sceneType: "sliding-box",
+        sceneLabel: "粗い水平面上を右向きに滑る箱の横から見た図",
+        actors: [
+          { id: "earth", label: "地球", icon: "earth" },
+          { id: "floor", label: "床", icon: "floor" },
+          { id: "hand", label: "手", icon: "hand", feedback: "箱はすでに手から離れています。接触している相手を確認しよう。" },
+          { id: "velocity", label: "速度", icon: "velocity", feedback: "速度は物体ではないので、力を及ぼす行為者にはなれません。" }
+        ],
+        directions: copyDirections(BASIC_DIRECTIONS),
+        forceNames: ["重力", "垂直抗力", "動摩擦力", "手から受ける力"],
+        forces: [
+          { id: "stage5-gravity", actorId: "earth", directionId: "down", forceName: "重力", directionFeedback: "地球と箱の位置関係に注目して、向きを考え直してみよう。" },
+          { id: "stage5-normal", actorId: "floor", directionId: "up", forceName: "垂直抗力", directionFeedback: "床と箱の接触面に注目して、床が箱を押す向きを考えよう。" },
+          { id: "stage5-friction", actorId: "floor", directionId: "left", forceName: "動摩擦力", directionFeedback: "箱の運動方向と、床との接触に注目して考え直そう。" }
+        ],
+        axes: STANDARD_AXES,
+        fbd: { shape: "rect", label: "箱", angle: 0, fill: "#d6a66a" }
+      }
+    ];
+
     const state = {
+      stageIndex: 0,
+      targetSelected: false,
       current: {
         actorId: null,
         directionId: null,
         directionCorrect: false,
-        forceName: null
+        forceName: null,
+        forceId: null
       },
-      found: [],
-      feedbackType: ""
+      foundForceIds: [],
+      feedbackType: "",
+      stageComplete: false
     };
-
-    const DEFAULT_FEEDBACK = "中央のカードを上から順に選んで、力を作りましょう。";
 
     const el = {
       actorGrid: document.getElementById("actorGrid"),
@@ -683,46 +1027,90 @@
       currentTarget: document.getElementById("currentTarget"),
       targetText: document.getElementById("targetText"),
       motionText: document.getElementById("motionText"),
+      conditionRow: document.getElementById("conditionRow"),
+      conditionText: document.getElementById("conditionText"),
+      stageNumber: document.getElementById("stageNumber"),
       stageTitle: document.getElementById("stageTitle"),
       foundCount: document.getElementById("foundCount"),
+      totalForceCount: document.getElementById("totalForceCount"),
       feedback: document.getElementById("feedback"),
       addButton: document.getElementById("addButton"),
-      clearDiagramButton: document.getElementById("clearDiagramButton"),
+      nextButton: document.getElementById("nextButton"),
+      restartButton: document.getElementById("restartButton"),
+      hintButton: document.getElementById("hintButton"),
+      resetButton: document.getElementById("resetButton"),
+      sceneWrap: document.getElementById("sceneWrap"),
+      sceneSvg: document.getElementById("sceneSvg"),
+      sceneSvgTitle: document.getElementById("sceneSvgTitle"),
+      sceneLayer: document.getElementById("sceneLayer"),
+      fbdSvg: document.getElementById("fbdSvg"),
+      axisLayer: document.getElementById("axisLayer"),
+      bodyLayer: document.getElementById("bodyLayer"),
       forceLayer: document.getElementById("forceLayer"),
-      previewLayer: document.getElementById("previewLayer")
+      previewLayer: document.getElementById("previewLayer"),
+      centerLayer: document.getElementById("centerLayer")
     };
 
+    function getStage() {
+      return stages[state.stageIndex];
+    }
+
     function getActor(actorId) {
-      return stage.actors.find((actor) => actor.id === actorId);
+      return getStage().actors.find(function (actor) {
+        return actor.id === actorId;
+      });
     }
 
     function getDirection(directionId) {
-      return stage.directions.find((direction) => direction.id === directionId);
+      return getStage().directions.find(function (direction) {
+        return direction.id === directionId;
+      });
     }
 
-    function getExpectedForce(actorId) {
-      return stage.forces.find((force) => force.actorId === actorId);
+    function isForceFound(forceId) {
+      return state.foundForceIds.includes(forceId);
+    }
+
+    function getUnfoundForces(actorId) {
+      return getStage().forces.filter(function (force) {
+        return !isForceFound(force.id) && (!actorId || force.actorId === actorId);
+      });
+    }
+
+    function getCurrentMatchingForce() {
+      return getUnfoundForces(state.current.actorId).find(function (force) {
+        return force.directionId === state.current.directionId &&
+          force.forceName === state.current.forceName;
+      });
+    }
+
+    function defaultFeedback() {
+      return "状況図の着目物体をクリックしましょう。";
     }
 
     function currentStep() {
+      if (!state.targetSelected) return 1;
       if (!state.current.actorId) return 2;
-      if (!state.current.directionCorrect) return 3;
-      if (!state.current.forceName) return 4;
+      if (!state.current.forceName) return 3;
+      if (!state.current.directionCorrect) return 4;
       return 5;
     }
 
     function isReadyToAdd() {
-      if (!state.current.actorId || !state.current.directionCorrect || !state.current.forceName) return false;
-      const expected = getExpectedForce(state.current.actorId);
-      return expected &&
-        expected.directionId === state.current.directionId &&
-        expected.forceName === state.current.forceName;
+      var matchingForce = getCurrentMatchingForce();
+      return Boolean(
+        state.targetSelected &&
+        state.current.forceId &&
+        !isForceFound(state.current.forceId) &&
+        matchingForce &&
+        matchingForce.id === state.current.forceId
+      );
     }
 
-    function setFeedback(message, type = "") {
-      state.feedbackType = type;
+    function setFeedback(message, type) {
+      state.feedbackType = type || "";
       el.feedback.textContent = message;
-      el.feedback.className = `feedback ${type}`;
+      el.feedback.className = "feedback " + state.feedbackType;
     }
 
     function resetCurrent() {
@@ -730,267 +1118,540 @@
       state.current.directionId = null;
       state.current.directionCorrect = false;
       state.current.forceName = null;
+      state.current.forceId = null;
+    }
+
+    function resetStageState() {
+      resetCurrent();
+      state.targetSelected = false;
+      state.foundForceIds = [];
+      state.stageComplete = false;
+      setFeedback(defaultFeedback(), "");
     }
 
     function fullReset() {
-      resetCurrent();
-      state.found = [];
-      setFeedback(DEFAULT_FEEDBACK, "");
+      resetStageState();
       render();
     }
 
     function renderActorIcon(type) {
       const icons = {
-        earth: `
-          <svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true">
-            <circle cx="40" cy="40" r="33" fill="#8fd0ff" stroke="#111" stroke-width="2"></circle>
-            <path d="M24 18 C31 20 31 28 26 30 C20 33 24 42 30 39 C36 36 42 43 36 50 C32 54 35 61 43 63 C50 65 53 55 49 50 C46 45 55 43 59 37 C65 28 55 20 47 22 C41 24 39 14 32 14 Z" fill="#67b96c" stroke="#155e27" stroke-width="1.5"></path>
-            <path d="M16 44 C22 42 28 47 27 54 C26 59 20 58 17 53 Z" fill="#67b96c" stroke="#155e27" stroke-width="1.5"></path>
-          </svg>`,
-        table: `
-          <svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true">
-            <rect x="13" y="25" width="54" height="15" fill="#c7a16d" stroke="#111" stroke-width="2"></rect>
-            <rect x="29" y="40" width="12" height="36" fill="#d8d8d8" stroke="#111" stroke-width="2"></rect>
-          </svg>`,
-        air: `
-          <svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true">
-            <path d="M28 52 H55 C64 52 68 45 65 38 C62 30 53 29 49 34 C47 23 34 20 28 29 C20 29 14 36 16 44 C18 49 22 52 28 52 Z" fill="#fff" stroke="#111" stroke-width="2.3"></path>
-            <circle cx="62" cy="56" r="8" fill="#fff" stroke="#111" stroke-width="2"></circle>
-          </svg>`,
-        velocity: `
-          <svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true">
-            <line x1="13" y1="40" x2="62" y2="40" stroke="#1467bd" stroke-width="6"></line>
-            <path d="M62 40 L48 28 V52 Z" fill="#1467bd"></path>
-          </svg>`
+        earth: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="33" fill="#8fd0ff" stroke="#111" stroke-width="2"></circle><path d="M24 18 C31 20 31 28 26 30 C20 33 24 42 30 39 C36 36 42 43 36 50 C32 54 35 61 43 63 C50 65 53 55 49 50 C46 45 55 43 59 37 C65 28 55 20 47 22 C41 24 39 14 32 14 Z" fill="#67b96c" stroke="#155e27" stroke-width="1.5"></path><path d="M16 44 C22 42 28 47 27 54 C26 59 20 58 17 53 Z" fill="#67b96c" stroke="#155e27" stroke-width="1.5"></path></svg>',
+        table: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><rect x="13" y="25" width="54" height="15" fill="#c7a16d" stroke="#111" stroke-width="2"></rect><rect x="18" y="40" width="9" height="34" fill="#d8d8d8" stroke="#111" stroke-width="2"></rect><rect x="53" y="40" width="9" height="34" fill="#d8d8d8" stroke="#111" stroke-width="2"></rect></svg>',
+        air: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><path d="M28 52 H55 C64 52 68 45 65 38 C62 30 53 29 49 34 C47 23 34 20 28 29 C20 29 14 36 16 44 C18 49 22 52 28 52 Z" fill="#fff" stroke="#111" stroke-width="2.3"></path><circle cx="62" cy="56" r="8" fill="#fff" stroke="#111" stroke-width="2"></circle></svg>',
+        velocity: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><line x1="13" y1="40" x2="62" y2="40" stroke="#1467bd" stroke-width="5" stroke-dasharray="8 5"></line><path d="M62 40 L48 28 V52 Z" fill="#1467bd"></path></svg>',
+        string: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><line x1="40" y1="8" x2="40" y2="65" stroke="#595959" stroke-width="4"></line><circle cx="40" cy="67" r="7" fill="#d8d8d8" stroke="#111" stroke-width="2"></circle></svg>',
+        ceiling: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><rect x="10" y="20" width="60" height="12" fill="#b8c2cc" stroke="#111" stroke-width="2"></rect><path d="M15 32 l-8 12 M30 32 l-8 12 M45 32 l-8 12 M60 32 l-8 12" stroke="#667085" stroke-width="2"></path></svg>',
+        slope: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><path d="M10 66 L68 28 L68 66 Z" fill="#eef1f4" stroke="#111" stroke-width="2"></path><rect x="34" y="37" width="25" height="16" transform="rotate(-33 46.5 45)" fill="#81c279" stroke="#111" stroke-width="2"></rect></svg>',
+        hand: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><path d="M18 58 C22 46 30 42 39 44 L56 30 C60 27 65 31 62 36 L51 50 C47 58 36 65 25 66 Z" fill="#f2c6a0" stroke="#111" stroke-width="2"></path><path d="M36 44 L50 27 M42 46 L58 33" stroke="#111" stroke-width="2"></path></svg>',
+        floor: '<svg class="actor-icon" viewBox="0 0 80 80" aria-hidden="true"><line x1="8" y1="48" x2="72" y2="48" stroke="#8b5e34" stroke-width="6"></line><path d="M12 48 l5 -8 l5 8 l5 -8 l5 8 l5 -8 l5 8 l5 -8 l5 8 l5 -8 l5 8" fill="none" stroke="#111" stroke-width="2"></path></svg>'
       };
-      return icons[type];
+      return icons[type] || "";
+    }
+
+    const sceneRenderers = {
+      "book-on-table": function () {
+        return [
+          '<rect x="55" y="145" width="450" height="22" fill="#c7a16d" stroke="#111" stroke-width="2"></rect>',
+          '<rect x="78" y="167" width="18" height="60" fill="#d8d8d8" stroke="#111" stroke-width="2"></rect>',
+          '<rect x="470" y="167" width="18" height="60" fill="#d8d8d8" stroke="#111" stroke-width="2"></rect>',
+          '<g class="target-object" role="button" tabindex="0" aria-label="着目物体の本を選ぶ"><rect class="target-shape" x="205" y="95" width="154" height="50" rx="12" fill="#81c279" stroke="#111" stroke-width="2.2"></rect>',
+          '<path d="M350 95 C342 103 342 137 350 145 L378 145 L378 95 Z" fill="#f8fbff" stroke="#111" stroke-width="2.2"></path>',
+          '<path d="M355 103 H377 M354 111 H377 M354 119 H377 M355 127 H377 M357 135 H377" stroke="#9aa3ad" stroke-width="1.5"></path>',
+          '<text x="282" y="77" text-anchor="middle" font-size="17" font-weight="900" fill="#0c4f96">着目物体：本</text></g>'
+        ].join("");
+      },
+      "hanging-mass": function () {
+        return [
+          '<rect x="105" y="28" width="350" height="18" fill="#b8c2cc" stroke="#111" stroke-width="2"></rect>',
+          '<path d="M120 46 l-12 15 M150 46 l-12 15 M180 46 l-12 15 M210 46 l-12 15 M240 46 l-12 15 M270 46 l-12 15 M300 46 l-12 15 M330 46 l-12 15 M360 46 l-12 15 M390 46 l-12 15 M420 46 l-12 15" stroke="#667085" stroke-width="2"></path>',
+          '<line x1="280" y1="46" x2="280" y2="153" stroke="#4b5563" stroke-width="4"></line>',
+          '<circle cx="280" cy="153" r="4" fill="#111"></circle>',
+          '<g class="target-object" role="button" tabindex="0" aria-label="着目物体のおもりを選ぶ"><circle class="target-shape" cx="280" cy="190" r="37" fill="#9aa3ad" stroke="#111" stroke-width="2.5"></circle>',
+          '<text x="280" y="198" text-anchor="middle" font-size="16" font-weight="900">おもり</text></g>',
+          '<text x="280" y="18" text-anchor="middle" font-size="16" font-weight="900" fill="#0c4f96">天井</text>'
+        ].join("");
+      },
+      "smooth-incline": function () {
+        return [
+          '<path d="M95 225 L440 26 L485 225 Z" fill="#eef1f4" stroke="#111" stroke-width="2.5"></path>',
+          '<line x1="95" y1="225" x2="440" y2="26" stroke="#637083" stroke-width="5"></line>',
+          '<g class="target-object" role="button" tabindex="0" aria-label="着目物体の斜面上の物体を選ぶ" transform="rotate(-30 292 118)"><rect class="target-shape" x="244" y="94" width="96" height="48" rx="5" fill="#81c279" stroke="#111" stroke-width="2.5"></rect><text x="292" y="124" text-anchor="middle" font-size="16" font-weight="900">物体</text></g>',
+          '<path d="M184 190 C196 170 211 159 230 157 L247 145 C254 140 261 148 256 154 L239 170 C228 184 207 201 188 207 Z" fill="#f2c6a0" stroke="#111" stroke-width="2"></path>',
+          '<path d="M218 162 L241 143 M225 168 L251 150" stroke="#111" stroke-width="2"></path>',
+          '<text x="130" y="246" font-size="15" font-weight="900" fill="#0c4f96">なめらかな斜面</text>'
+        ].join("");
+      },
+      "thrown-ball": function () {
+        return [
+          '<g class="target-object" role="button" tabindex="0" aria-label="着目物体のボールを選ぶ"><circle class="target-shape" cx="280" cy="92" r="35" fill="#f2a65a" stroke="#111" stroke-width="2.5"></circle>',
+          '<path d="M273 72 C286 78 287 101 275 111 M293 65 C301 79 300 101 291 118" fill="none" stroke="#d0772b" stroke-width="2"></path></g>',
+          '<line x1="360" y1="150" x2="360" y2="62" stroke="#1467bd" stroke-width="4" stroke-dasharray="8 5"></line>',
+          '<path d="M360 52 L351 68 H369 Z" fill="#1467bd"></path><text x="374" y="104" font-size="18" font-weight="900" fill="#1467bd">v</text>',
+          '<path d="M215 222 C226 200 243 190 262 191 L280 181 C288 178 293 187 286 192 L267 206 C252 220 233 229 218 232 Z" fill="#f2c6a0" stroke="#111" stroke-width="2"></path>',
+          '<line x1="280" y1="135" x2="280" y2="174" stroke="#667085" stroke-width="2" stroke-dasharray="5 6"></line>',
+          '<text x="300" y="161" font-size="14" font-weight="800" fill="#667085">手から離れている</text>'
+        ].join("");
+      },
+      "sliding-box": function () {
+        var rough = "";
+        for (var x = 60; x <= 490; x += 20) {
+          rough += '<path d="M' + x + ' 190 l8 -8 l8 8" fill="none" stroke="#111" stroke-width="2"></path>';
+        }
+        return [
+          '<rect x="45" y="190" width="470" height="28" fill="#c7a16d" stroke="#111" stroke-width="2"></rect>',
+          rough,
+          '<g class="target-object" role="button" tabindex="0" aria-label="着目物体の箱を選ぶ"><rect class="target-shape" x="220" y="125" width="120" height="65" fill="#d6a66a" stroke="#111" stroke-width="2.5"></rect>',
+          '<text x="280" y="164" text-anchor="middle" font-size="18" font-weight="900">箱</text></g>',
+          '<line x1="210" y1="89" x2="373" y2="89" stroke="#1467bd" stroke-width="4" stroke-dasharray="8 5"></line>',
+          '<path d="M385 89 L367 79 V99 Z" fill="#1467bd"></path><text x="286" y="77" font-size="18" font-weight="900" fill="#1467bd">v</text>',
+          '<text x="62" y="244" font-size="15" font-weight="900" fill="#0c4f96">粗い床</text>'
+        ].join("");
+      }
+    };
+
+    function renderScene() {
+      var stage = getStage();
+      var renderer = sceneRenderers[stage.sceneType];
+      el.sceneLayer.innerHTML = renderer ? renderer(stage) : "";
+      var targetObject = el.sceneLayer.querySelector(".target-object");
+      if (targetObject) {
+        targetObject.classList.toggle("selected", state.targetSelected);
+        targetObject.setAttribute("aria-pressed", state.targetSelected ? "true" : "false");
+        targetObject.addEventListener("click", selectTarget);
+        targetObject.addEventListener("keydown", function (event) {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            selectTarget();
+          }
+        });
+      }
+      el.sceneSvgTitle.textContent = stage.sceneLabel;
+      el.sceneWrap.setAttribute("aria-label", stage.sceneLabel);
+      el.sceneSvg.setAttribute("aria-label", stage.sceneLabel);
     }
 
     function renderActors() {
+      var stage = getStage();
       el.actorGrid.innerHTML = "";
-      stage.actors.forEach((actor) => {
-        const button = document.createElement("button");
+      stage.actors.forEach(function (actor) {
+        var button = document.createElement("button");
         button.type = "button";
         button.className = "actor-card";
+        button.disabled = !state.targetSelected || state.stageComplete;
         if (state.current.actorId === actor.id) button.classList.add("selected");
-        if (state.found.some((force) => force.actorId === actor.id)) button.classList.add("found");
+        var actorForces = stage.forces.filter(function (force) {
+          return force.actorId === actor.id;
+        });
+        if (actorForces.length && actorForces.every(function (force) {
+          return isForceFound(force.id);
+        })) {
+          button.classList.add("found");
+        }
         button.dataset.actorId = actor.id;
-        button.innerHTML = `${renderActorIcon(actor.icon)}<span>${actor.label}</span>`;
-        button.addEventListener("click", () => selectActor(actor.id));
+        button.innerHTML = renderActorIcon(actor.icon) + "<span>" + actor.label + "</span>";
+        button.addEventListener("click", function () {
+          selectActor(actor.id);
+        });
         el.actorGrid.appendChild(button);
       });
     }
 
+    function renderDirectionMark(direction) {
+      var magnitude = Math.hypot(direction.dx, direction.dy) || 1;
+      var dx = direction.dx / magnitude;
+      var dy = direction.dy / magnitude;
+      var x1 = 24 - dx * 11;
+      var y1 = 18 - dy * 11;
+      var x2 = 24 + dx * 13;
+      var y2 = 18 + dy * 13;
+      var baseX = x2 - dx * 7;
+      var baseY = y2 - dy * 7;
+      var px = -dy * 4;
+      var py = dx * 4;
+      var points = x2 + "," + y2 + " " + (baseX + px) + "," + (baseY + py) + " " + (baseX - px) + "," + (baseY - py);
+      return '<svg class="direction-vector" viewBox="0 0 48 36" aria-hidden="true"><line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="#1467bd" stroke-width="3"></line><polygon points="' + points + '" fill="#1467bd"></polygon></svg>';
+    }
+
     function renderDirections() {
+      var stage = getStage();
       el.directionGrid.innerHTML = "";
-      stage.directions.forEach((direction) => {
-        const button = document.createElement("button");
+      el.directionGrid.classList.toggle("six-options", stage.directions.length > 4);
+      stage.directions.forEach(function (direction) {
+        var button = document.createElement("button");
         button.type = "button";
         button.className = "choice-card";
         if (state.current.directionId === direction.id) button.classList.add("selected");
-        button.disabled = !state.current.actorId;
-        button.innerHTML = `<span class="arrow-mark">${direction.mark}</span><span class="choice-text">${direction.label}<span class="choice-note">${direction.note}</span></span>`;
-        button.addEventListener("click", () => selectDirection(direction.id));
+        button.disabled = !state.current.forceId || state.stageComplete;
+        button.innerHTML = renderDirectionMark(direction) + '<span class="choice-text">' + direction.label + "</span>";
+        button.addEventListener("click", function () {
+          selectDirection(direction.id);
+        });
         el.directionGrid.appendChild(button);
       });
     }
 
     function renderForceNames() {
+      var stage = getStage();
       el.forceGrid.innerHTML = "";
-      stage.forceNames.forEach((forceName) => {
-        const button = document.createElement("button");
+      stage.forceNames.forEach(function (forceName) {
+        var button = document.createElement("button");
         button.type = "button";
         button.className = "choice-card";
         if (state.current.forceName === forceName) button.classList.add("selected");
-        button.disabled = !state.current.directionCorrect;
+        button.disabled = !state.current.actorId || state.stageComplete;
         button.textContent = forceName;
-        button.addEventListener("click", () => selectForceName(forceName));
+        button.addEventListener("click", function () {
+          selectForceName(forceName);
+        });
         el.forceGrid.appendChild(button);
       });
     }
 
     function renderSteps() {
-      const steps = [
-        { num: 1, text: "着目物体を確認する", suffix: "→ 本" },
-        { num: 2, text: "行為者を探す（クリック）", suffix: "" },
-        { num: 3, text: "向きカードを選ぶ", suffix: "" },
-        { num: 4, text: "力の名前カードを選ぶ", suffix: "" },
-        { num: 5, text: "自由物体図に追加する", suffix: "" }
+      var steps = [
+        { num: 1, text: "着目物体を選ぶ" },
+        { num: 2, text: "行為者を探す" },
+        { num: 3, text: "力の名前を選ぶ" },
+        { num: 4, text: "力の向きを考える" },
+        { num: 5, text: "自由物体図に追加する" }
       ];
       el.stepsList.innerHTML = "";
-      const active = currentStep();
-      steps.forEach((step) => {
-        const li = document.createElement("li");
-        li.className = `step ${step.num === active ? "active" : ""}`;
-        li.innerHTML = `<span class="step-marker">${step.num === active ? "▶" : ""}</span><span class="step-num">${step.num}</span><span>${step.text}</span><span class="step-target">${step.suffix}</span>`;
-        el.stepsList.appendChild(li);
+      var active = currentStep();
+      steps.forEach(function (step) {
+        var item = document.createElement("li");
+        item.className = "step " + (step.num === active && !state.stageComplete ? "active" : "");
+        item.innerHTML = '<span class="step-marker">' + (step.num === active && !state.stageComplete ? "▶" : "") + '</span><span class="step-num">' + step.num + "</span><span>" + step.text + "</span>";
+        el.stepsList.appendChild(item);
       });
     }
 
     function renderCurrent() {
-      const actor = getActor(state.current.actorId);
-      const direction = getDirection(state.current.directionId);
+      var stage = getStage();
+      var actor = getActor(state.current.actorId);
+      var direction = getDirection(state.current.directionId);
       el.currentActor.textContent = actor ? actor.label : "未選択";
-      el.currentTarget.textContent = stage.target;
-      el.currentDirection.textContent = direction ? direction.label : "未選択";
+      el.currentTarget.textContent = state.targetSelected ? stage.target : "未選択";
       el.currentForce.textContent = state.current.forceName || "未選択";
+      el.currentDirection.textContent = direction ? direction.label : "未選択";
       el.addButton.disabled = !isReadyToAdd();
+      el.addButton.hidden = state.stageComplete;
+      el.nextButton.hidden = !(state.stageComplete && state.stageIndex < stages.length - 1);
+      el.restartButton.hidden = !(state.stageComplete && state.stageIndex === stages.length - 1);
     }
 
-    function arrowCoords(arrow) {
-      if (arrow === "up") return { x1: 210, y1: 125, x2: 210, y2: 62, labelX: 224, labelY: 84 };
-      return { x1: 210, y1: 163, x2: 210, y2: 224, labelX: 224, labelY: 216 };
+    function createSvgElement(name, attributes) {
+      var element = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.keys(attributes || {}).forEach(function (key) {
+        element.setAttribute(key, attributes[key]);
+      });
+      return element;
     }
 
-    function drawArrow(layer, force, className, label) {
-      const pos = arrowCoords(force.arrow);
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("x1", pos.x1);
-      line.setAttribute("y1", pos.y1);
-      line.setAttribute("x2", pos.x2);
-      line.setAttribute("y2", pos.y2);
-      line.setAttribute("class", className);
+    function renderAxes() {
+      var axes = getStage().axes;
+      el.axisLayer.innerHTML = "";
+      ["x", "y"].forEach(function (name) {
+        var vector = axes[name];
+        var magnitude = Math.hypot(vector.dx, vector.dy) || 1;
+        var dx = vector.dx / magnitude;
+        var dy = vector.dy / magnitude;
+        var line = createSvgElement("line", {
+          x1: 210 - dx * 105,
+          y1: 145 - dy * 105,
+          x2: 210 + dx * 110,
+          y2: 145 + dy * 110,
+          class: "axis-line"
+        });
+        el.axisLayer.appendChild(line);
+        var label = createSvgElement("text", {
+          x: 210 + dx * 126,
+          y: 145 + dy * 126 + 6,
+          class: "axis-label",
+          "text-anchor": "middle"
+        });
+        label.textContent = name;
+        el.axisLayer.appendChild(label);
+      });
+    }
+
+    function renderFbdBody() {
+      var body = getStage().fbd;
+      el.bodyLayer.innerHTML = "";
+      if (body.shape === "circle") {
+        var circle = createSvgElement("circle", {
+          cx: 210,
+          cy: 145,
+          r: 31,
+          fill: body.fill,
+          stroke: "#111",
+          "stroke-width": 2
+        });
+        el.bodyLayer.appendChild(circle);
+        var circleLabel = createSvgElement("text", {
+          x: 170,
+          y: 151,
+          "text-anchor": "end",
+          "font-size": 14,
+          "font-weight": 900
+        });
+        circleLabel.textContent = body.label;
+        el.bodyLayer.appendChild(circleLabel);
+      } else {
+        var group = createSvgElement("g", {
+          transform: "rotate(" + (body.angle || 0) + " 210 145)"
+        });
+        var rect = createSvgElement("rect", {
+          x: 150,
+          y: 125,
+          width: 120,
+          height: 40,
+          fill: body.fill,
+          stroke: "#111",
+          "stroke-width": 2
+        });
+        var rectLabel = createSvgElement("text", {
+          x: 166,
+          y: 151,
+          "text-anchor": "middle",
+          "font-size": 14,
+          "font-weight": 900
+        });
+        rectLabel.textContent = body.label;
+        group.appendChild(rect);
+        group.appendChild(rectLabel);
+        el.bodyLayer.appendChild(group);
+      }
+      el.centerLayer.innerHTML = "";
+      el.centerLayer.appendChild(createSvgElement("circle", {
+        cx: 210,
+        cy: 145,
+        r: 5.5,
+        fill: "#111"
+      }));
+    }
+
+    function drawForceArrow(layer, directionId, className, labelText) {
+      var direction = getDirection(directionId);
+      if (!direction) return;
+      var magnitude = Math.hypot(direction.dx, direction.dy) || 1;
+      var dx = direction.dx / magnitude;
+      var dy = direction.dy / magnitude;
+      var x2 = 210 + dx * 94;
+      var y2 = 145 + dy * 94;
+      var line = createSvgElement("line", {
+        x1: 210,
+        y1: 145,
+        x2: x2,
+        y2: y2,
+        class: className
+      });
       layer.appendChild(line);
-
-      if (label) {
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", pos.labelX);
-        text.setAttribute("y", pos.labelY);
-        text.setAttribute("class", "force-label");
-        text.textContent = label;
+      if (labelText) {
+        var pointsLeft = dx < -0.2;
+        var text = createSvgElement("text", {
+          x: x2 + (pointsLeft ? -10 : 10),
+          y: y2 + (dy < -0.2 ? 18 : -8),
+          class: "force-label",
+          "text-anchor": pointsLeft ? "end" : "start"
+        });
+        text.textContent = labelText;
         layer.appendChild(text);
       }
     }
 
     function renderDiagram() {
+      var stage = getStage();
+      renderAxes();
+      el.bodyLayer.innerHTML = "";
+      el.centerLayer.innerHTML = "";
       el.forceLayer.innerHTML = "";
       el.previewLayer.innerHTML = "";
-      state.found.forEach((force) => drawArrow(el.forceLayer, force, "force-arrow", force.forceName));
-
-      if (state.current.directionCorrect && state.current.forceName) return;
-      if (state.current.directionCorrect) {
-        const expected = getExpectedForce(state.current.actorId);
-        if (expected && !state.found.some((force) => force.actorId === expected.actorId)) {
-          drawArrow(el.previewLayer, expected, "preview-arrow", "");
-        }
+      if (!state.targetSelected) {
+        el.fbdSvg.setAttribute("aria-label", "着目物体を選ぶ前の自由物体図");
+        return;
       }
+      renderFbdBody();
+      stage.forces.filter(function (force) {
+        return isForceFound(force.id);
+      }).forEach(function (force) {
+        drawForceArrow(el.forceLayer, force.directionId, "force-arrow", force.forceName);
+      });
+      if (state.current.directionId) {
+        drawForceArrow(el.previewLayer, state.current.directionId, "preview-arrow", "");
+      }
+      el.fbdSvg.setAttribute("aria-label", stage.target + "の自由物体図");
     }
 
     function renderStatus() {
+      var stage = getStage();
       el.targetText.textContent = stage.target;
       el.motionText.textContent = stage.motion;
+      el.conditionText.textContent = stage.condition || "";
+      el.conditionRow.hidden = !stage.condition;
+      el.stageNumber.textContent = state.stageIndex + 1;
       el.stageTitle.textContent = stage.title;
-      el.foundCount.textContent = state.found.length;
+      el.foundCount.textContent = state.foundForceIds.length;
+      el.totalForceCount.textContent = stage.forces.length;
     }
 
     function render() {
+      renderScene();
       renderActors();
-      renderDirections();
       renderForceNames();
+      renderDirections();
       renderSteps();
       renderCurrent();
       renderDiagram();
       renderStatus();
     }
 
+    function selectTarget() {
+      if (state.stageComplete || state.targetSelected) return;
+      var stage = getStage();
+      state.targetSelected = true;
+      resetCurrent();
+      setFeedback("着目物体「" + stage.target + "」を選びました。次に力の行為者を探しましょう。");
+      render();
+    }
+
     function selectActor(actorId) {
-      const actor = getActor(actorId);
-      if (!actor.correct) {
-        setFeedback(actor.feedback, "error");
+      if (!state.targetSelected || state.stageComplete) return;
+      var stage = getStage();
+      var actor = getActor(actorId);
+      var actorForces = stage.forces.filter(function (force) {
+        return force.actorId === actorId;
+      });
+      if (!actorForces.length) {
+        setFeedback(actor.feedback || "その候補は、力を及ぼす行為者ではありません。", "error");
         return;
       }
-
+      if (getUnfoundForces(actorId).length === 0) {
+        resetCurrent();
+        setFeedback("その行為者から受ける力は、すべて追加されています。", "error");
+        render();
+        return;
+      }
       state.current.actorId = actorId;
       state.current.directionId = null;
       state.current.directionCorrect = false;
       state.current.forceName = null;
-
-      if (state.found.some((force) => force.actorId === actorId)) {
-        setFeedback("その行為者からの力は、すでに自由物体図に追加されています。", "error");
-      } else {
-        setFeedback(`行為者「${actor.label}」を選びました。次に向きを選びましょう。`);
-      }
+      state.current.forceId = null;
+      setFeedback("行為者「" + actor.label + "」を選びました。次に力の名前を考えましょう。");
       render();
     }
 
     function selectDirection(directionId) {
-      if (!state.current.actorId) return;
-
-      const expected = getExpectedForce(state.current.actorId);
-      const direction = getDirection(directionId);
+      if (!state.current.forceId || state.stageComplete) return;
+      var stage = getStage();
+      var direction = getDirection(directionId);
       state.current.directionId = directionId;
-      state.current.directionCorrect = expected && expected.directionId === directionId;
-      state.current.forceName = null;
+      var selectedForce = stage.forces.find(function (force) {
+        return force.id === state.current.forceId;
+      });
+      state.current.directionCorrect = Boolean(selectedForce && selectedForce.directionId === directionId);
 
       if (state.current.directionCorrect) {
-        setFeedback(`向き「${direction.label}」を選びました。次に力の名前を選びましょう。`);
+        setFeedback("向き「" + direction.label + "」を選びました。自由物体図に追加できます。");
       } else {
-        setFeedback(expected.directionFeedback, "error");
+        setFeedback(selectedForce && selectedForce.directionFeedback ? selectedForce.directionFeedback : "行為者と着目物体の接触や位置関係に注目して、向きを考え直してみよう。", "error");
       }
       render();
     }
 
     function selectForceName(forceName) {
-      if (!state.current.directionCorrect) return;
-
-      const expected = getExpectedForce(state.current.actorId);
-      if (expected.forceName === forceName) {
-        state.current.forceName = forceName;
-        setFeedback(`力の名前「${forceName}」を選びました。自由物体図に追加できます。`);
+      if (!state.current.actorId || state.stageComplete) return;
+      state.current.forceName = forceName;
+      state.current.directionId = null;
+      state.current.directionCorrect = false;
+      var matchingForce = getUnfoundForces(state.current.actorId).find(function (force) {
+        return force.forceName === forceName;
+      });
+      if (matchingForce) {
+        state.current.forceId = matchingForce.id;
+        setFeedback("力の名前「" + forceName + "」を選びました。次に向きを考えましょう。");
       } else {
+        var alreadyFound = getStage().forces.some(function (force) {
+          return force.actorId === state.current.actorId &&
+            force.forceName === forceName &&
+            isForceFound(force.id);
+        });
         state.current.forceName = null;
-        setFeedback(expected.forceFeedback, "error");
+        state.current.forceId = null;
+        if (alreadyFound && getUnfoundForces(state.current.actorId).length) {
+          setFeedback("その力はすでに見つけています。同じ行為者から受ける別の力を探してみよう。", "error");
+        } else {
+          setFeedback("選んだ行為者が対象物体に及ぼす力の名前を考え直してみよう。", "error");
+        }
       }
       render();
     }
 
     function addCurrentForce() {
-      if (!isReadyToAdd()) return;
-
-      const expected = getExpectedForce(state.current.actorId);
-      const duplicate = state.found.some((force) =>
-        force.actorId === expected.actorId &&
-        force.directionId === expected.directionId &&
-        force.forceName === expected.forceName
-      );
-
-      if (duplicate) {
+      if (!isReadyToAdd() || state.stageComplete) return;
+      var stage = getStage();
+      var force = stage.forces.find(function (item) {
+        return item.id === state.current.forceId;
+      });
+      if (!force || isForceFound(force.id)) {
         setFeedback("その力はすでに自由物体図に追加されています。", "error");
         return;
       }
-
-      state.found.push({ ...expected });
+      state.foundForceIds.push(force.id);
       resetCurrent();
 
-      if (state.found.length === stage.forces.length) {
-        setFeedback("完成！本にはたらく力をすべて見つけました。", "success");
+      if (state.foundForceIds.length === stage.forces.length) {
+        state.stageComplete = true;
+        if (state.stageIndex === stages.length - 1) {
+          setFeedback("✓ 全ステージクリア！", "success");
+        } else {
+          setFeedback("完成！" + stage.target + "にはたらく力をすべて見つけました。", "success");
+        }
       } else {
-        setFeedback("自由物体図に追加しました。もう一つの力を探しましょう。", "success");
+        setFeedback("自由物体図に追加しました。別の力を探しましょう。", "success");
       }
       render();
     }
 
-    function clearDiagramOnly() {
-      state.found = [];
-      resetCurrent();
-      setFeedback("自由物体図をクリアしました。もう一度、力を探しましょう。");
+    function goToNextStage() {
+      if (!state.stageComplete || state.stageIndex >= stages.length - 1) return;
+      state.stageIndex += 1;
+      resetStageState();
+      render();
+    }
+
+    function restartGame() {
+      if (!state.stageComplete || state.stageIndex !== stages.length - 1) return;
+      state.stageIndex = 0;
+      resetStageState();
       render();
     }
 
     function showHint() {
-      if (!state.current.actorId) {
-        setFeedback("力を探すときは、まず「誰がこの物体に力を及ぼしているか」を考えます。");
-      } else if (!state.current.directionCorrect) {
-        setFeedback("接触している場合は、接触面の向きに注目しましょう。");
+      if (state.stageComplete) {
+        if (state.stageIndex < stages.length - 1) {
+          setFeedback("次のステージへ進みましょう。", "success");
+        } else {
+          setFeedback("✓ 全ステージクリア！", "success");
+        }
+      } else if (!state.targetSelected) {
+        setFeedback("状況図で、課題に指定された着目物体をクリックしよう。");
+      } else if (!state.current.actorId) {
+        setFeedback("着目物体の周囲にあるものを見て、力を及ぼしている相手を探そう。");
       } else if (!state.current.forceName) {
-        setFeedback("地球から受ける力は重力、面に垂直な接触力は垂直抗力です。");
+        setFeedback("選んだ行為者が対象物体に及ぼす力の名前を考えよう。");
+      } else if (!state.current.directionCorrect) {
+        setFeedback("選んだ力がどちら向きにはたらくか、位置関係や接触面に注目しよう。");
       } else {
-        setFeedback("ここまでそろったら、自由物体図に追加して矢印として記録しましょう。");
+        setFeedback("選んだ内容を自由物体図に記録しよう。");
       }
     }
 
     el.addButton.addEventListener("click", addCurrentForce);
-    el.clearDiagramButton.addEventListener("click", clearDiagramOnly);
+    el.nextButton.addEventListener("click", goToNextStage);
+    el.restartButton.addEventListener("click", restartGame);
+    el.hintButton.addEventListener("click", showHint);
+    el.resetButton.addEventListener("click", fullReset);
 
     render();
   </script>

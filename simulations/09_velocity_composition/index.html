@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>川を横切るモーターボートのシミュレーション</title>
+  <style>
+    :root {
+      --blue: #0868ce;
+      --blue-dark: #063b7a;
+      --blue-soft: #e9f3ff;
+      --border: #dce4ee;
+      --text: #172033;
+      --muted: #5c687a;
+      --panel: #ffffff;
+      --shadow: 0 2px 8px rgba(31, 58, 87, .08);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #f7f9fc;
+      color: var(--text);
+      font-family: "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(8, 104, 206, .28);
+      outline-offset: 2px;
+    }
+
+    .app {
+      width: 100%;
+      height: 100%;
+      min-width: 820px;
+      display: grid;
+      grid-template-rows: 64px minmax(0, 1fr);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      margin: 0;
+      color: #0b356e;
+      font-size: clamp(23px, 2.25vw, 34px);
+      line-height: 1.2;
+      letter-spacing: .01em;
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 12px;
+      padding: 10px 12px 12px;
+    }
+
+    .simulation-column {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 50px 42px minmax(0, 1fr);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-bottom: 0;
+      border-radius: var(--radius) var(--radius) 0 0;
+      background: #eef2f7;
+    }
+
+    .tab {
+      border: 0;
+      border-right: 1px solid var(--border);
+      background: #f9fbfd;
+      color: #4a5568;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .tab:last-child { border-right: 0; }
+    .tab:hover:not(:disabled) { background: var(--blue-soft); }
+    .tab[aria-selected="true"] { background: var(--blue); color: #fff; }
+    .tab:disabled { cursor: not-allowed; opacity: .62; }
+
+    .task-instruction {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      padding: 0 18px;
+      border: 1px solid var(--border);
+      border-top: 0;
+      border-bottom-color: #c8d8e9;
+      background: #f1f7fe;
+      color: #153d6d;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .canvas-shell {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid #b9c8d8;
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: #72c9ef;
+      box-shadow: var(--shadow);
+    }
+
+    #riverCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .vector-legend {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      display: none;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 7px 10px;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 8px;
+      background: rgba(255,255,255,.9);
+      color: #273449;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(17, 57, 91, .13);
+      pointer-events: none;
+    }
+
+    .vector-legend.visible { display: flex; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-line { width: 19px; height: 4px; border-radius: 3px; }
+    .legend-boat { background: #f07c2d; }
+    .legend-river { background: #1679db; }
+    .legend-ground { background: #7a3fc4; }
+
+    .side-panel {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      overflow-y: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+    }
+
+    .card {
+      flex: 0 0 auto;
+      padding: 10px 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .card h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .section-icon {
+      display: inline-grid;
+      width: 24px;
+      height: 24px;
+      place-items: center;
+      color: var(--blue);
+      font-size: 20px;
+    }
+
+    .action-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+
+    .action-btn {
+      min-height: 40px;
+      border: 1px solid var(--blue);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--blue);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .action-btn.primary { background: var(--blue); color: #fff; }
+    .action-btn:hover:not(:disabled) { filter: brightness(.96); }
+    .action-btn:disabled { border-color: #d9dde3; background: #e8eaed; color: #a7abb2; cursor: not-allowed; }
+
+    .setting-row {
+      display: grid;
+      grid-template-columns: 128px minmax(90px, 1fr) 82px;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .setting-row:first-of-type { margin-top: 0; }
+    .setting-label { font-size: 14px; font-weight: 700; line-height: 1.45; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    input[type="range"]:disabled { cursor: not-allowed; opacity: .55; }
+
+    .value-box {
+      min-height: 36px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      padding: 5px 7px;
+      border: 1px solid #d6deea;
+      border-radius: 8px;
+      background: #fbfcfe;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .value-box .unit { color: var(--muted); font-size: 12px; font-weight: 600; }
+    .direction-note { margin: 3px 0 0 138px; color: var(--muted); font-size: 12px; line-height: 1.3; }
+
+    .fixed-value {
+      grid-column: 2 / 4;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      color: #2c3b50;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+    .toggle-wide { grid-column: 1 / -1; }
+    .check-label { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 650; cursor: pointer; }
+
+    .check-label input {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      accent-color: var(--blue);
+    }
+
+    .check-label:has(input:disabled) { color: #9aa1ab; cursor: not-allowed; }
+
+    .results { margin: 0; }
+    .result-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 33px;
+      border-top: 1px solid #e5eaf0;
+      font-size: 14px;
+    }
+
+    .result-row:first-child { border-top: 0; }
+    .result-row dt, .result-row dd { margin: 0; }
+    .result-row dd { color: var(--blue); font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+
+    [hidden] { display: none !important; }
+
+    @media (max-height: 800px) {
+      .app { grid-template-rows: 56px minmax(0, 1fr); }
+      .workspace { padding-top: 8px; padding-bottom: 8px; }
+      .simulation-column { grid-template-rows: 46px 38px minmax(0, 1fr); }
+      .task-instruction { padding: 0 14px; font-size: 13px; }
+      .card { padding: 8px 12px; }
+      .card h2 { margin-bottom: 7px; font-size: 16px; }
+      .setting-row { margin-top: 6px; }
+      .action-btn { min-height: 36px; }
+      .result-row { min-height: 30px; }
+    }
+
+    @media (max-height: 690px) {
+      .app { grid-template-rows: 50px minmax(0, 1fr); }
+      .header { padding: 0 18px; }
+      h1 { font-size: 22px; }
+      .workspace { gap: 8px; padding: 6px 8px; }
+      .simulation-column { grid-template-rows: 40px 36px minmax(0, 1fr); }
+      .tab { font-size: 13px; }
+      .task-instruction { padding: 0 12px; font-size: 12px; }
+      .side-panel { gap: 5px; }
+      .card { padding: 7px 10px; }
+      .card h2 { margin-bottom: 4px; font-size: 15px; }
+      .section-icon { width: 20px; height: 20px; font-size: 17px; }
+      .action-row { gap: 6px; }
+      .action-btn { min-height: 34px; font-size: 13px; }
+      .setting-row { grid-template-columns: 112px minmax(74px, 1fr) 72px; gap: 6px; margin-top: 4px; }
+      .setting-label { font-size: 12px; line-height: 1.3; }
+      .value-box, .fixed-value { min-height: 32px; font-size: 13px; }
+      .direction-note { margin-top: 2px; margin-left: 118px; font-size: 11px; }
+      .toggles { gap: 6px 12px; }
+      .check-label { gap: 6px; font-size: 12px; }
+      .check-label input { width: 18px; height: 18px; }
+      .result-row { min-height: 27px; font-size: 12px; }
+    }
+
+    @media (max-width: 1050px) {
+      .workspace { grid-template-columns: minmax(0, 1fr) 330px; gap: 10px; padding-left: 10px; padding-right: 10px; }
+      .setting-row { grid-template-columns: 112px minmax(74px, 1fr) 74px; gap: 7px; }
+      .direction-note { margin-left: 119px; }
+      .tab { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>川を横切るモーターボートのシミュレーション</h1>
+    </header>
+
+    <section class="workspace">
+      <div class="simulation-column">
+        <nav class="tabs" aria-label="課題を選択">
+          <button class="tab" type="button" data-task="1" aria-selected="true">課題1　正面到達</button>
+          <button class="tab" type="button" data-task="2" aria-selected="false">課題2　最速到着</button>
+          <button class="tab" type="button" data-task="3" aria-selected="false">課題3　正面到達　その２</button>
+        </nav>
+        <div id="taskInstruction" class="task-instruction" role="status" aria-live="polite">ボートの速さと向きを調整し、対岸の正面にある船着き場を目指そう。</div>
+        <div class="canvas-shell">
+          <canvas id="riverCanvas" role="img" aria-label="川を真上から見たモーターボートのシミュレーション"></canvas>
+          <div id="vectorLegend" class="vector-legend" aria-hidden="true">
+            <span class="legend-item"><span class="legend-line legend-boat"></span>船（静水に対して）</span>
+            <span class="legend-item"><span class="legend-line legend-river"></span>川の流れ</span>
+            <span class="legend-item"><span class="legend-line legend-ground"></span>船（地面に対して）</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side-panel" aria-label="操作パネル">
+        <section class="card">
+          <h2><span class="section-icon">⚙</span>操作</h2>
+          <div class="action-row">
+            <button id="startBtn" class="action-btn primary" type="button">▶ 開始</button>
+            <button id="pauseBtn" class="action-btn" type="button" disabled>Ⅱ 一時停止</button>
+            <button id="resetBtn" class="action-btn" type="button">↻ リセット</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2><span class="section-icon">⛵</span>ボート設定</h2>
+          <div id="boatSpeedControl" class="setting-row">
+            <label class="setting-label" for="boatSpeed">ボートの速さ<br>（静水に対して）</label>
+            <input id="boatSpeed" type="range" min="1" max="10" step="0.1" value="6" aria-describedby="boatSpeedValue">
+            <output id="boatSpeedValue" class="value-box" for="boatSpeed"><span>6.0</span><span class="unit">m/s</span></output>
+          </div>
+          <div id="boatSpeedFixed" class="setting-row" hidden>
+            <span class="setting-label">ボートの速さ<br>（静水に対して）</span>
+            <span class="fixed-value">6.0 m/s（固定）</span>
+          </div>
+          <div class="setting-row">
+            <label class="setting-label" for="boatAngle">ボートの向き</label>
+            <input id="boatAngle" type="range" min="-80" max="80" step="1" value="0" aria-describedby="boatAngleValue angleNote">
+            <output id="boatAngleValue" class="value-box" for="boatAngle"><span>0°</span></output>
+          </div>
+          <p id="angleNote" class="direction-note">0°＝正面　＋＝上流側　－＝下流側</p>
+        </section>
+
+        <section id="riverCard" class="card" hidden>
+          <h2><span class="section-icon">≋</span>川の設定</h2>
+          <div class="setting-row">
+            <label class="setting-label" for="riverSpeed">川の流速</label>
+            <input id="riverSpeed" type="range" min="0" max="10" step="0.1" value="10" aria-describedby="riverSpeedValue">
+            <output id="riverSpeedValue" class="value-box" for="riverSpeed"><span>10.0</span><span class="unit">m/s</span></output>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2><span class="section-icon">◉</span>表示切替</h2>
+          <div class="toggles">
+            <label class="check-label toggle-wide"><input id="vectorsToggle" type="checkbox">速度ベクトルを表示</label>
+            <label class="check-label"><input id="componentsToggle" type="checkbox" disabled>成分を表示</label>
+            <label class="check-label"><input id="trailToggle" type="checkbox" checked>軌跡を表示</label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2><span class="section-icon">▥</span>結果</h2>
+          <dl id="results" class="results"></dl>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const RIVER_WIDTH = 100;
+      const TIME_SCALE = 6.0;
+      const MAX_REAL_DELTA = 0.05;
+      const GOAL_TOLERANCE = 2.0;
+      const VECTOR_SCALE = 13;
+
+      const taskDefaults = {
+        1: { boatSpeed: 6.0, angle: 0, riverSpeed: 2.0 },
+        2: { boatSpeed: 6.0, angle: 0, riverSpeed: 2.0 },
+        3: { boatSpeed: 3.0, angle: 0, riverSpeed: 10.0 }
+      };
+
+      const taskInstructions = {
+        1: 'ボートの速さと向きを調整し、対岸の正面にある船着き場を目指そう。',
+        2: 'ボートの向きを変え、できるだけ短い時間で対岸に着く方法を探そう。',
+        3: '川の流速・ボートの速さ・向きを変え、正面の船着き場に着けるか確かめよう。'
+      };
+
+      const canvas = document.getElementById('riverCanvas');
+      const ctx = canvas.getContext('2d');
+      const tabs = [...document.querySelectorAll('.tab')];
+      const startBtn = document.getElementById('startBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const boatSpeed = document.getElementById('boatSpeed');
+      const boatAngle = document.getElementById('boatAngle');
+      const riverSpeed = document.getElementById('riverSpeed');
+      const boatSpeedValue = document.querySelector('#boatSpeedValue span');
+      const boatAngleValue = document.querySelector('#boatAngleValue span');
+      const riverSpeedValue = document.querySelector('#riverSpeedValue span');
+      const boatSpeedControl = document.getElementById('boatSpeedControl');
+      const boatSpeedFixed = document.getElementById('boatSpeedFixed');
+      const riverCard = document.getElementById('riverCard');
+      const vectorsToggle = document.getElementById('vectorsToggle');
+      const componentsToggle = document.getElementById('componentsToggle');
+      const trailToggle = document.getElementById('trailToggle');
+      const vectorLegend = document.getElementById('vectorLegend');
+      const results = document.getElementById('results');
+      const taskInstruction = document.getElementById('taskInstruction');
+
+      let task = 1;
+      let status = 'ready';
+      let state = createInitialState(1);
+      let bestRecord = null;
+      let lastTimestamp = null;
+      let animationId = null;
+      let cssWidth = 0;
+      let cssHeight = 0;
+      let dpr = 1;
+
+      function createInitialState(taskNumber) {
+        const defaults = taskDefaults[taskNumber];
+        return {
+          x: 0,
+          y: 0,
+          elapsed: 0,
+          boatSpeed: defaults.boatSpeed,
+          angle: defaults.angle,
+          riverSpeed: defaults.riverSpeed,
+          trail: [{ x: 0, y: 0 }],
+          arrivalX: null,
+          judgment: null
+        };
+      }
+
+      function velocity() {
+        const theta = state.angle * Math.PI / 180;
+        const boatVx = -state.boatSpeed * Math.sin(theta);
+        const boatVy = state.boatSpeed * Math.cos(theta);
+        return {
+          boatVx,
+          boatVy,
+          vx: state.riverSpeed + boatVx,
+          vy: boatVy
+        };
+      }
+
+      function setTask(nextTask) {
+        if (status === 'running' || status === 'paused') return;
+        task = nextTask;
+        bestRecord = null;
+        tabs.forEach(tab => tab.setAttribute('aria-selected', String(Number(tab.dataset.task) === task)));
+        resetSimulation();
+      }
+
+      function resetSimulation() {
+        stopAnimation();
+        status = 'ready';
+        state = createInitialState(task);
+        lastTimestamp = null;
+        boatSpeed.value = String(state.boatSpeed);
+        boatAngle.value = String(state.angle);
+        riverSpeed.value = String(state.riverSpeed);
+        updateTaskControls();
+        updateValueDisplays();
+        updateControlStates();
+        updateResults();
+        draw();
+      }
+
+      function updateTaskControls() {
+        boatSpeedControl.hidden = task === 2;
+        boatSpeedFixed.hidden = task !== 2;
+        riverCard.hidden = task !== 3;
+        taskInstruction.textContent = taskInstructions[task];
+      }
+
+      function updateValueDisplays() {
+        boatSpeedValue.textContent = state.boatSpeed.toFixed(1);
+        riverSpeedValue.textContent = state.riverSpeed.toFixed(1);
+        boatAngleValue.textContent = `${state.angle > 0 ? '+' : ''}${state.angle}°`;
+      }
+
+      function updateControlStates() {
+        const locked = status === 'running' || status === 'paused' || status === 'finished';
+        const active = status === 'running';
+
+        startBtn.disabled = active || status === 'finished';
+        startBtn.textContent = status === 'paused' ? '▶ 再開' : '▶ 開始';
+        pauseBtn.disabled = !active;
+        tabs.forEach(tab => { tab.disabled = status === 'running' || status === 'paused'; });
+        boatSpeed.disabled = locked || task === 2;
+        boatAngle.disabled = locked;
+        riverSpeed.disabled = locked || task !== 3;
+      }
+
+      function startSimulation() {
+        if (status === 'finished' || status === 'running') return;
+        status = 'running';
+        lastTimestamp = null;
+        updateControlStates();
+        animationId = requestAnimationFrame(animate);
+      }
+
+      function pauseSimulation() {
+        if (status !== 'running') return;
+        status = 'paused';
+        stopAnimation();
+        lastTimestamp = null;
+        updateControlStates();
+        updateResults();
+      }
+
+      function stopAnimation() {
+        if (animationId !== null) cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      function animate(timestamp) {
+        if (status !== 'running') return;
+
+        if (lastTimestamp === null) {
+          lastTimestamp = timestamp;
+        } else {
+          const realDelta = Math.min((timestamp - lastTimestamp) / 1000, MAX_REAL_DELTA);
+          lastTimestamp = timestamp;
+          advance(realDelta * TIME_SCALE);
+        }
+
+        draw();
+        updateResults();
+        if (status === 'running') animationId = requestAnimationFrame(animate);
+      }
+
+      function advance(dt) {
+        const v = velocity();
+        const previous = { x: state.x, y: state.y, elapsed: state.elapsed };
+        const next = {
+          x: previous.x + v.vx * dt,
+          y: previous.y + v.vy * dt,
+          elapsed: previous.elapsed + dt
+        };
+
+        if (next.y >= RIVER_WIDTH) {
+          const fraction = (RIVER_WIDTH - previous.y) / (next.y - previous.y);
+          state.x = previous.x + (next.x - previous.x) * fraction;
+          state.y = RIVER_WIDTH;
+          state.elapsed = previous.elapsed + dt * fraction;
+          state.arrivalX = state.x;
+          state.trail.push({ x: state.x, y: state.y });
+          finishTrial();
+          return;
+        }
+
+        state.x = next.x;
+        state.y = next.y;
+        state.elapsed = next.elapsed;
+        state.trail.push({ x: state.x, y: state.y });
+      }
+
+      function finishTrial() {
+        status = 'finished';
+        stopAnimation();
+        lastTimestamp = null;
+
+        if (task === 2) {
+          state.judgment = '対岸に到着';
+          if (bestRecord === null || state.elapsed < bestRecord) bestRecord = state.elapsed;
+        } else if (Math.abs(state.arrivalX) <= GOAL_TOLERANCE) {
+          state.judgment = '正面到達';
+        } else if (state.arrivalX > 0) {
+          state.judgment = '下流側に到着';
+        } else {
+          state.judgment = '上流側に到着';
+        }
+
+        updateControlStates();
+        updateResults();
+        draw();
+      }
+
+      function formatOffset(value) {
+        const magnitude = Math.abs(value).toFixed(1);
+        if (Math.abs(value) <= GOAL_TOLERANCE) return `正面 ${magnitude} m`;
+        return `${value > 0 ? '下流側' : '上流側'} ${magnitude} m`;
+      }
+
+      function updateResults() {
+        const offset = status === 'finished' ? formatOffset(state.arrivalX) : '—';
+        const time = `${state.elapsed.toFixed(1)} s`;
+
+        if (task === 2) {
+          results.innerHTML = `
+            <div class="result-row"><dt>横断時間</dt><dd>${time}</dd></div>
+            <div class="result-row"><dt>最短記録</dt><dd>${bestRecord === null ? '—' : `${bestRecord.toFixed(1)} s`}</dd></div>
+            <div class="result-row"><dt>到着点のずれ</dt><dd>${offset}</dd></div>`;
+        } else {
+          results.innerHTML = `
+            <div class="result-row"><dt>到着点のずれ</dt><dd>${offset}</dd></div>
+            <div class="result-row"><dt>横断時間</dt><dd>${time}</dd></div>
+            <div class="result-row"><dt>正面到達判定</dt><dd>${status === 'finished' ? state.judgment : '—'}</dd></div>`;
+        }
+      }
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        cssWidth = Math.max(1, rect.width);
+        cssHeight = Math.max(1, rect.height);
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(cssWidth * dpr);
+        canvas.height = Math.round(cssHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        draw();
+      }
+
+      function layoutMetrics() {
+        const bankHeight = Math.max(55, Math.min(cssHeight * 0.165, 100));
+        const riverTop = bankHeight;
+        const riverBottom = cssHeight - bankHeight;
+        const riverHeight = riverBottom - riverTop;
+        return {
+          bankHeight,
+          riverTop,
+          riverBottom,
+          riverHeight,
+          scale: riverHeight / RIVER_WIDTH,
+          originX: cssWidth / 2
+        };
+      }
+
+      function worldToScreen(x, y, m) {
+        return { x: m.originX + x * m.scale, y: m.riverBottom - y * m.scale };
+      }
+
+      function draw() {
+        if (!cssWidth || !cssHeight) return;
+        ctx.clearRect(0, 0, cssWidth, cssHeight);
+        const m = layoutMetrics();
+        drawRiverAndBanks(m);
+        if (task !== 2) drawGoal(m);
+        drawFlowArrows(m);
+        drawStart(m);
+        if (trailToggle.checked && state.trail.length > 1) drawTrail(m);
+        drawBoat(m);
+        if (vectorsToggle.checked) drawVectors(m);
+      }
+
+      function drawRiverAndBanks(m) {
+        const water = ctx.createLinearGradient(0, m.riverTop, 0, m.riverBottom);
+        water.addColorStop(0, '#48b4e6');
+        water.addColorStop(.48, '#2199d5');
+        water.addColorStop(1, '#3aaddd');
+        ctx.fillStyle = water;
+        ctx.fillRect(0, m.riverTop, cssWidth, m.riverHeight);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, m.riverTop, cssWidth, m.riverHeight);
+        ctx.clip();
+        ctx.globalAlpha = .25;
+        ctx.strokeStyle = '#e2f7ff';
+        ctx.lineWidth = 1;
+        for (let y = m.riverTop + 13; y < m.riverBottom; y += 22) {
+          ctx.beginPath();
+          for (let x = -20; x <= cssWidth + 20; x += 30) {
+            const waveY = y + Math.sin((x + y) * .055) * 3;
+            if (x === -20) ctx.moveTo(x, waveY); else ctx.lineTo(x, waveY);
+          }
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        drawBank(0, m.riverTop, true);
+        drawBank(m.riverBottom, cssHeight, false);
+
+        ctx.strokeStyle = 'rgba(255,255,255,.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 0; x <= cssWidth; x += 12) {
+          const y = m.riverTop + Math.sin(x * .05) * 2;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.beginPath();
+        for (let x = 0; x <= cssWidth; x += 12) {
+          const y = m.riverBottom + Math.sin((x + 40) * .05) * 2;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      function drawBank(top, bottom, upper) {
+        const earth = ctx.createLinearGradient(0, top, 0, bottom);
+        if (upper) {
+          earth.addColorStop(0, '#72a84f');
+          earth.addColorStop(.72, '#9bb663');
+          earth.addColorStop(1, '#c6b681');
+        } else {
+          earth.addColorStop(0, '#c7b27b');
+          earth.addColorStop(.28, '#a8af65');
+          earth.addColorStop(1, '#6f9f4d');
+        }
+        ctx.fillStyle = earth;
+        ctx.fillRect(0, top, cssWidth, bottom - top);
+
+        const shorelineY = upper ? bottom - 8 : top + 8;
+        const seedOffset = upper ? 11 : 37;
+        for (let x = 8; x < cssWidth; x += 17) {
+          const n = pseudoRandom(x + seedOffset);
+          ctx.fillStyle = n > .5 ? '#8b826e' : '#b7aa8b';
+          ctx.beginPath();
+          ctx.ellipse(x + n * 6, shorelineY + (n - .5) * 13, 4 + n * 4, 2.5 + n * 2, n, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.strokeStyle = 'rgba(54,112,44,.55)';
+        ctx.lineWidth = 1.5;
+        const grassBase = upper ? Math.max(top + 8, bottom - 28) : Math.min(bottom - 8, top + 30);
+        for (let x = 12; x < cssWidth; x += 26) {
+          const n = pseudoRandom(x + seedOffset * 3);
+          ctx.beginPath();
+          ctx.moveTo(x, grassBase);
+          ctx.lineTo(x - 4, grassBase + (upper ? -1 : 1) * (8 + n * 8));
+          ctx.moveTo(x, grassBase);
+          ctx.lineTo(x + 4, grassBase + (upper ? -1 : 1) * (7 + n * 10));
+          ctx.stroke();
+        }
+      }
+
+      function pseudoRandom(value) {
+        const x = Math.sin(value * 12.9898) * 43758.5453;
+        return x - Math.floor(x);
+      }
+
+      function drawFlowArrows(m) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(220,247,255,.56)';
+        ctx.fillStyle = 'rgba(220,247,255,.56)';
+        ctx.lineWidth = 3;
+        const columns = Math.max(3, Math.floor(cssWidth / 220));
+        const rows = 3;
+        for (let row = 0; row < rows; row++) {
+          const y = m.riverTop + m.riverHeight * (row + 1) / (rows + 1);
+          for (let col = 0; col < columns; col++) {
+            const x = (col + .25 + (row % 2) * .18) * cssWidth / columns;
+            const length = Math.min(72, cssWidth / columns * .36);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + length, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + length, y);
+            ctx.lineTo(x + length - 12, y - 7);
+            ctx.lineTo(x + length - 12, y + 7);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawGoal(m) {
+        const goal = worldToScreen(0, RIVER_WIDTH, m);
+        const start = worldToScreen(0, 0, m);
+
+        ctx.save();
+        ctx.setLineDash([10, 9]);
+        ctx.strokeStyle = 'rgba(255,255,255,.95)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y - 4);
+        ctx.lineTo(goal.x, goal.y + 3);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        drawDock(goal.x, goal.y);
+        drawPill('ゴール', goal.x, Math.max(15, goal.y - Math.min(34, m.bankHeight * .45)), '#d8493f');
+        ctx.restore();
+      }
+
+      function drawDock(centerX, shoreY) {
+        const pierWidth = 24;
+        const pierLength = 42;
+        const top = shoreY - 6;
+        const bottom = shoreY + pierLength;
+        const left = centerX - pierWidth / 2;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(45,57,55,.22)';
+        ctx.fillRect(left + 3, top + 3, pierWidth, pierLength + 6);
+
+        ctx.fillStyle = '#a96f32';
+        ctx.strokeStyle = '#70451f';
+        ctx.lineWidth = 1.5;
+        drawDockSection(left, top, pierWidth, pierLength + 6, true);
+
+        ctx.fillStyle = '#5d3b20';
+        for (const x of [left + 3, left + pierWidth - 3]) {
+          ctx.beginPath();
+          ctx.arc(x, bottom, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawDockSection(x, y, width, height, horizontalPlanks) {
+        ctx.fillRect(x, y, width, height);
+        ctx.strokeRect(x, y, width, height);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(92,55,23,.55)';
+        ctx.lineWidth = 1;
+        if (horizontalPlanks) {
+          for (let lineY = y + 7; lineY < y + height; lineY += 8) {
+            ctx.beginPath();
+            ctx.moveTo(x, lineY);
+            ctx.lineTo(x + width, lineY);
+            ctx.stroke();
+          }
+        } else {
+          for (let lineX = x + 9; lineX < x + width; lineX += 10) {
+            ctx.beginPath();
+            ctx.moveTo(lineX, y);
+            ctx.lineTo(lineX, y + height);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawStart(m) {
+        const start = worldToScreen(0, 0, m);
+        const y = Math.min(cssHeight - 17, start.y + Math.min(30, m.bankHeight * .45));
+        drawPill('スタート', start.x, y, '#096bcc');
+      }
+
+      function drawPill(text, x, y, fill) {
+        ctx.save();
+        ctx.font = '700 14px "Yu Gothic UI", Meiryo, sans-serif';
+        const width = ctx.measureText(text).width + 20;
+        const height = 27;
+        const left = x - width / 2;
+        const top = y - height / 2;
+        roundedRect(left, top, width, height, 6);
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.9)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x, y + .5);
+        ctx.restore();
+      }
+
+      function roundedRect(x, y, width, height, radius) {
+        const r = Math.min(radius, width / 2, height / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + width, y, x + width, y + height, r);
+        ctx.arcTo(x + width, y + height, x, y + height, r);
+        ctx.arcTo(x, y + height, x, y, r);
+        ctx.arcTo(x, y, x + width, y, r);
+        ctx.closePath();
+      }
+
+      function drawTrail(m) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,.9)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        state.trail.forEach((point, index) => {
+          const p = worldToScreen(point.x, point.y, m);
+          if (index === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawBoat(m) {
+        const p = worldToScreen(state.x, state.y, m);
+        const size = Math.max(25, Math.min(38, m.scale * 7.2));
+        const theta = -state.angle * Math.PI / 180;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(theta);
+
+        ctx.fillStyle = 'rgba(16,43,66,.2)';
+        ctx.beginPath();
+        ctx.ellipse(2, 4, size * .42, size * .78, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(0, -size);
+        ctx.bezierCurveTo(size * .48, -size * .55, size * .46, size * .56, 0, size * .82);
+        ctx.bezierCurveTo(-size * .46, size * .56, -size * .48, -size * .55, 0, -size);
+        ctx.closePath();
+        ctx.fillStyle = '#f7f9fa';
+        ctx.fill();
+        ctx.strokeStyle = '#18334b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, -size * .72);
+        ctx.bezierCurveTo(size * .28, -size * .35, size * .27, size * .25, 0, size * .48);
+        ctx.bezierCurveTo(-size * .27, size * .25, -size * .28, -size * .35, 0, -size * .72);
+        ctx.fillStyle = '#dfe7ec';
+        ctx.fill();
+
+        ctx.fillStyle = '#1e638a';
+        roundedRect(-size * .22, -size * .42, size * .44, size * .28, 4);
+        ctx.fill();
+        ctx.fillStyle = '#a66d25';
+        roundedRect(-size * .24, .02 * size, size * .2, size * .28, 3);
+        ctx.fill();
+        roundedRect(size * .04, .02 * size, size * .2, size * .28, 3);
+        ctx.fill();
+
+        ctx.fillStyle = '#2c3641';
+        roundedRect(-size * .09, size * .72, size * .18, size * .32, 4);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawVectors(m) {
+        const p = worldToScreen(state.x, state.y, m);
+        const v = velocity();
+        const boatEnd = { x: p.x + v.boatVx * VECTOR_SCALE, y: p.y - v.boatVy * VECTOR_SCALE };
+        const riverEnd = { x: p.x + state.riverSpeed * VECTOR_SCALE, y: p.y };
+        const groundEnd = { x: p.x + v.vx * VECTOR_SCALE, y: p.y - v.vy * VECTOR_SCALE };
+
+        drawArrow(p.x, p.y, boatEnd.x, boatEnd.y, '#f07c2d', 4);
+        drawArrow(p.x, p.y, riverEnd.x, riverEnd.y, '#1679db', 4);
+        drawArrow(p.x, p.y, groundEnd.x, groundEnd.y, '#7a3fc4', 4);
+
+        if (componentsToggle.checked) {
+          ctx.save();
+          ctx.setLineDash([5, 4]);
+          ctx.strokeStyle = 'rgba(75,49,105,.78)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(groundEnd.x, p.y);
+          ctx.lineTo(groundEnd.x, groundEnd.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function drawArrow(x1, y1, x2, y2, color, width) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const head = 10;
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      tabs.forEach(tab => tab.addEventListener('click', () => setTask(Number(tab.dataset.task))));
+      startBtn.addEventListener('click', startSimulation);
+      pauseBtn.addEventListener('click', pauseSimulation);
+      resetBtn.addEventListener('click', resetSimulation);
+
+      boatSpeed.addEventListener('input', () => {
+        state.boatSpeed = Number(boatSpeed.value);
+        updateValueDisplays();
+        draw();
+      });
+
+      boatAngle.addEventListener('input', () => {
+        state.angle = Number(boatAngle.value);
+        updateValueDisplays();
+        draw();
+      });
+
+      riverSpeed.addEventListener('input', () => {
+        state.riverSpeed = Number(riverSpeed.value);
+        updateValueDisplays();
+        draw();
+      });
+
+      vectorsToggle.addEventListener('change', () => {
+        componentsToggle.disabled = !vectorsToggle.checked;
+        if (!vectorsToggle.checked) componentsToggle.checked = false;
+        vectorLegend.classList.toggle('visible', vectorsToggle.checked);
+        draw();
+      });
+      componentsToggle.addEventListener('change', draw);
+      trailToggle.addEventListener('change', draw);
+
+      const resizeObserver = new ResizeObserver(resizeCanvas);
+      resizeObserver.observe(canvas);
+      resetSimulation();
+    })();
+  </script>
+</body>
+</html>
